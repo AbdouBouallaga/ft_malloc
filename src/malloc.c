@@ -7,7 +7,7 @@ void	*HeapHead = NULL;
 
 typedef struct		s_metadata{
 	unsigned int	size;
-	unsigned char	isUsed;
+	unsigned char	isFree;
 }					t_metadata;
 
 void *malloc(size_t size)
@@ -17,21 +17,27 @@ void *malloc(size_t size)
 	if (HeapHead == NULL){
 		HeapHead = mmap(0, 0, PROT, MAP,0, 0);
 	}
-
+    ////
+    //  printf("size%d\n", size);
+    //  printf("Msize%d\n", sizeof(t_metadata));
 	/// allocate metadata
 	t_metadata *meta = mmap(0, sizeof(t_metadata), PROT, MAP,0, 0);
 	meta->size = size;
-	meta->isUsed = 1;
+	meta->isFree = 0;
+	ptr = mmap(0, size, PROT, MAP,0, 0);
 
 	/// allocate memory by size
-	ptr = mmap(0, size, PROT, MAP,0, 0);
+
+
+    printf("malloc\nptr: %p\nmeta: %p\n s: %p\nF: %p\n", ptr, meta, meta->size, meta->isFree);
 	return(ptr);
 }
 
 void free(void *ptr){
 	t_metadata *meta = ptr - sizeof(t_metadata);
 
-	meta->isUsed = 0;
+	meta->isFree = 1;
+
 }
 
 ////////////////////////////////////////////////test part/////////////////////////////////////////////
@@ -42,8 +48,11 @@ typedef struct      s_list{
 }                   t_list;
 
 t_list    *add_blk(int data){
+    void *m;
     t_list *ret = (t_list *)malloc(sizeof(t_list));
-    printf("%p\n", ret);
+    m = ret - sizeof(t_metadata);
+    printf(">ret %p\n", ret);
+    printf(">meta %p\n\n", m);
     ret->data = data;
     return(ret);
 }
@@ -62,16 +71,18 @@ t_list *tr_bac(t_list *cur, t_list *next){
 
 int main()
 {
+    printf("\n");
     int i = 2;
     t_list *head = add_blk(1);
     t_list *prev;
     t_list *cur;
     t_list *next = add_blk(2);
     t_list *temp;
+    t_metadata *meta;
     head->link = xor(NULL, next);
     cur = next;
     prev = head;
-    while (++i < 11){
+    while (++i < 3){
         temp = add_blk(i);
         cur->link = xor(prev, temp);
         temp->link = xor(NULL, cur);
@@ -82,12 +93,12 @@ int main()
     cur = head;
     prev = NULL;
     printf("\n");
-    while(++i < 11){
-        printf("%p\n", cur);
-        printf("%d\n", cur->data);
-        next = tr_for(cur, prev);
-        prev = cur;
-        cur = next;
-    }
+    // while(++i < 11){
+    //     meta = cur - sizeof(t_metadata);
+    //     printf("addr: %p\nMetadata:\nsize = %d\nisfree = %d\n\n", cur, meta->size, meta->isFree);
+    //     next = tr_for(cur, prev);
+    //     prev = cur;
+    //     cur = next;
+    // }
     return(0);
 }
