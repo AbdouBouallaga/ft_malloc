@@ -1,74 +1,62 @@
 #include "../inc/malloc.h"
 
-typedef struct              s_heap
-{
-    void                    *head = NULL;
-    unsigned long long int  size = 0;
-    int                     pagesize = 0;
-    void                    *lastFree = NULL;
-}                           t_heap;
 
-t_heap	*heap;
-
-#define PROT PROT_READ|PROT_WRITE
-#define MAP MAP_SHARED|MAP_ANONYMOUS
+/// GLOBAL VARIABLE HEAP
+void                *HeapHead;
 
 typedef struct		s_metadata
 {
 	unsigned int	size;
-	unsigned char	isFree;
+	unsigned int	isFree;
 }					t_metadata;
 
-void    allocate(int num)
+void    *allocate(size_t size)
 {
-    int i = -1;
-    t_metadata *meta;
+    void        *ptr = NULL;
+    t_metadata  *meta;
+    int         sizeofmeta = sizeof(t_metadata);
+    printf("sizeof t_meta %d\n", sizeofmeta);
 
-    while(++i <= num)
-    {
-        meta = mmap(0, sizeof(t_metadata), PROT, MAP,0, 0);
-	    meta->size = size;
-	    meta->isFree = 0;
-    }
+    meta = mmap(0, size+sizeofmeta, PROT, MAP,0, 0);
+	meta->size = size;
+	meta->isFree = 0;
+    ptr = meta+(sizeofmeta/8);
+    printf("__meta %p\n__ptr %p\n__size %d\n\n", meta, ptr,meta->size);
+    return(ptr);
 }
 
-void    extend_heap(void *ptr)
+void    init_heap(void *ptr)
 {
-    int tiny = 10;
-    int small = 10;
     int i = -1;
-
-    if (!heap->head){
-        heap->size = 0;
-        heap->pagesize = getpagesize();
-        heap->lastFree = NULL;
-    }
-
-    while(++i < tiny){
-
-    }
+    int PageSize = getpagesize();
+    HeapHead = allocate(PageSize*TINY_FACTOR);
+    allocate(PageSize*SMALL_FACTOR);
+    printf("heap head : %p\npagesize : %d\n",HeapHead,PageSize);
+    t_metadata *meta = HeapHead-sizeof(t_metadata);
+    printf("meta %p\nmeta->size %d\n\n",meta, meta->size);
 }
 
 void    *malloc(size_t size)
 {
-	void *ptr;
-    int pagesize = getpagesize();
-    printf(">>%d\n", pagesize);
-
+	void *ret;
+    void *ptr;
+    t_metadata *metaa;
+    printf("sizeof t_meta %d\n", sizeof(t_metadata));
 	/// initiate heap head
-	if (HeapHead == NULL){
-        extend_heap();
+	if (!HeapHead){
+        init_heap(0);
 	}
     ////
-    //  printf("size%d\n", size);
+    metaa = HeapHead-sizeof(t_metadata);
+    printf(">>>>>%p\n\n", metaa);
     //  printf("Msize%d\n", sizeof(t_metadata));
 	/// allocate metadata
-	t_metadata *meta = mmap(0, sizeof(t_metadata), PROT, MAP,0, 0);
+	t_metadata *meta = mmap(0, size+sizeof(t_metadata), PROT, MAP,0, 0);
 	meta->size = size;
 	meta->isFree = 0;
 
 	/// allocate memory by size
-	ptr = mmap(0, size, PROT, MAP,0, 0);
+	ptr = meta+sizeof(t_metadata);
 
     printf("malloc\nptr: %p\nmeta: %p\n s: %p\nF: %p\n", ptr, meta, meta->size, meta->isFree);
 	return(ptr);

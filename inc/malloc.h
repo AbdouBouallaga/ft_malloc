@@ -4,8 +4,13 @@
 #include <sys/mman.h>
 
 
-#define PROT PROT_READ|PROT_WRITE
-#define MAP MAP_SHARED|MAP_ANONYMOUS
+#define PROT    PROT_READ|PROT_WRITE
+#define MAP     MAP_SHARED|MAP_ANONYMOUS
+
+#define TINY_FACTOR     1
+#define TINY_LIMIT      1024
+#define SMALL_FACTOR    2
+#define SMALL_LIMIT     2048
 
 void free(void *ptr);
 void *malloc(size_t size);
