@@ -12,6 +12,13 @@
 #define SMALL_FACTOR    2
 #define SMALL_LIMIT     2048
 
+typedef struct		s_metadata
+{
+	unsigned int	size;
+	unsigned int	isFree;
+}					t_metadata;
+
+
 void free(void *ptr);
 void *malloc(size_t size);
 void *realloc(void *ptr, size_t size);
