@@ -118,16 +118,54 @@ void            *malloc(size_t size)
 
 void free(void *ptr)
 {
-    int accum;
-    void *nav = ptr;
-    bool unmap;
+    int     accum = 0;
+    t_page  *nav = ptr;
+    void    *save_max;
+    void    *save_min;
+    void    *temp;
+    int unmapq;
 	t_metadata *meta = ptr - sizeof(t_metadata);
 	meta->isFree = 1;
-    unmap = meta->size > heap->SMALL_LIMIT ? 1 : 0;
-    while ()
-    {
-
+    unmapq = (meta->size > heap->SMALL_LIMIT) ? 1 : 0;
+    // printf("unmap %d\n",unmapq);
+    save_max = nav;
+    while (nav){
+        temp = nav;
+        meta = temp - sizeof(t_metadata);
+        if (meta->isFree){
+            printf("free next\n");
+            accum += meta->size;
+        }
+        else
+            break;
+        save_max = nav;
+        nav = nav->next;
     }
+    printf("saved_max %p\n", save_max);
+    nav = ptr;
+    save_min = nav;
+    while (nav){
+        nav = nav->prev;
+        temp = nav;
+        meta = temp - sizeof(t_metadata);
+        if (meta->isFree){
+            printf("free prev\n");
+            accum += meta->size;
+        }
+        else
+            break;
+        save_min = nav;
+        nav = nav->prev;
+    }
+    nav = save_min;
+    temp = nav;
+    meta = temp - sizeof(t_metadata);
+    meta->isFree = 1;
+    meta->size = accum;
+    nav->next = save_max;
+    printf("saved_min %p\n", save_min);
+
+    printf("accum %d\n", accum);
 }
 
 /////////////////////////////////////////test part//////////////////////////////////////////
@@ -151,9 +189,21 @@ int main(){
     void *ptr2;
     void *freetest;
     void *freetest1;
-    while (++i < 3){
+    void *freetest2;
+    void *freetest3;
+    int c = 1;
+    while (++i < 5){
         ptr0 = malloc(3000);
         ptr1 = malloc(6000);
+        if (i == 2){
+            freetest1 = ptr1;
+        }
+        if (i == 3){
+            freetest2 = ptr1;
+        }
+        if (i == 4){
+            freetest3 = ptr1;
+        }
         ptr2 = malloc(12000);
         // if (ptr){
         //     meta = ptr-sizeof(t_metadata);
@@ -161,33 +211,39 @@ int main(){
         //     // printf("addr %p\nsize %d\n\n",meta, meta->size);
         // }
     }
-    freetest1 = malloc(6000);
     freetest = malloc(12000);
-    free(freetest);
-    free(freetest1);
+    // free(freetest2);
+    meta = freetest1 - sizeof(t_metadata);
+    meta->isFree = 1;
+    meta = freetest3 - sizeof(t_metadata);
+    meta->isFree = 1;
+    free(freetest2);
     t_page *page = heap->tiny;
-    printf("ZONE\tPTR\t\tSIZE\t\tISFREE\n");
+    printf("N\tZONE\tPTR\t\tSIZE\tISFREE\n");
     while(page){
         ptr = page;
         meta = ptr - sizeof(t_metadata);
-        printf("tiny\t%p\t%d\t\t%d\n", ptr, meta->size, meta->isFree);
+        printf("%d\ttiny\t%p\t%d\t%d\n", c, ptr, meta->size, meta->isFree);
         page = page->next;
+        c++;
     }
     page = heap->small;
     printf("\n");\
     while(page){
         ptr = page;
         meta = ptr - sizeof(t_metadata);
-        printf("small\t%p\t%d\t\t%d\n", ptr, meta->size, meta->isFree);
+        printf("%d\tsmall\t%p\t%d\t%d\n", c, ptr, meta->size, meta->isFree);
         page = page->next;
+        c++;
     }
     page = heap->large;
     printf("\n");
     while(page){
         ptr = page;
         meta = ptr - sizeof(t_metadata);
-        printf("Large\t%p\t%d\t\t%d\n", ptr, meta->size, meta->isFree);
+        printf("%d\tLarge\t%p\t%d\t%d\n", c, ptr, meta->size, meta->isFree);
         page = page->next;
+        c++;
     }
     // strcpy(ptr, "helo");
     // print_bytes(ptr, 1);
