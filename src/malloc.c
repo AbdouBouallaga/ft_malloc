@@ -10,16 +10,15 @@ void    *add_chunk(size_t size)
     void        *ptr = NULL;
     t_metadata  *meta;
     int         sizeofmeta = sizeof(t_metadata);
-    // printf("sizeof t_meta %d\n", sizeofmeta);
 
     meta = mmap(0, size+sizeofmeta, PROT, MAP,0, 0);
     if (meta != NULL){
-	    meta->size = size+sizeofmeta;
+	    meta->size = size;
 	    meta->isFree = 1;
+        meta->next = NULL;
+        meta->prev = NULL;
         void *metaAddr = meta;
-        // ptr = meta+(sizeofmeta/8); ///wtf is happening here
-        ptr = metaAddr+sizeof(t_metadata); 
-        // printf("__meta %p\n__ptr %p\n__size %d\n\n", meta, ptr,meta->size);
+        ptr = metaAddr+sizeof(t_metadata);
         return(ptr);
     }
     else {
@@ -31,56 +30,56 @@ void    init_heap()
 {
     heap = mmap(0, sizeof(t_heap), PROT, MAP,0, 0);
     heap->pagesize = getpagesize();
-    heap->TINY_LIMIT = heap->pagesize;
-    heap->SMALL_LIMIT = heap->pagesize*2;
-
     printf("PageSize%d\n\n", heap->pagesize);
+    heap->TINY_LIMIT = heap->pagesize/2;
+    heap->SMALL_LIMIT = heap->pagesize;
+
     heap->tiny = add_chunk(heap->pagesize * TINY_FACTOR);
-    heap->tiny->next = NULL;
-    heap->tiny->prev = NULL;
     heap->small = add_chunk(heap->pagesize * SMALL_FACTOR);
-    heap->small->next = NULL;
-    heap->small->prev = NULL;
-    heap->large = add_chunk(8);
-    heap->large->next = NULL;
-    heap->large->prev = NULL;
+    heap->large = NULL;
 }
 
-void            *allocate_in_zone(t_page **zone, size_t size,size_t zonefactor)
+void            *allocate_in_zone(void **zone, size_t size,size_t zonefactor)
 {
-    t_page          *ptr;
-    t_page          *page = *zone;
+    void            *current = *zone;
+    void            *new;
     void            *temp;
     t_metadata      *meta;
     t_metadata      *newMeta;
     unsigned int    meta_size = sizeof(t_metadata);
-    // printf("factor %d\n", zonefactor);
-    while (page)
+    if (current == NULL){
+        heap->large = add_chunk(heap->pagesize * zonefactor);
+        current = heap->large;
+    }
+    while (current) // search for free space and return a ptr.
     {
-        temp = page;
-        meta = temp-meta_size;
-        // printf("meta %p\n",meta);
-        // printf("\nINFO'\nmeta %p\nptr %p\nsize %d\nis free %d\nINFO END\n\n", meta, page,meta->size, meta->isFree);
+        meta = current-meta_size;
+        if (size > heap->SMALL_LIMIT)
+            printf("ptr %p\nsize %d\nisFree %d\n",current, meta->size, meta->isFree);
         if(meta->isFree && size < meta->size - meta_size){
-            meta->isFree = 0;
-            newMeta = temp+size;
-            ptr = temp+size+meta_size;
-            newMeta->isFree = 1;
-            newMeta->size = meta->size - size - meta_size;
-            meta->size = size+meta_size;
-            page->next = ptr;
-            ptr->prev = page;
-            ptr->next = NULL;
-            return(page);
+                meta->isFree = 0;
+            if (size <= heap->SMALL_LIMIT){ 
+                // in preallocated zones, the free space is devided,\
+                take the size you need and define the rest as free space.
+                new = current+size+meta_size;
+                newMeta = new-meta_size;
+                newMeta->isFree = 1;
+                newMeta->size = meta->size - size - meta_size;
+                meta->size = size+meta_size;
+                meta->next = new;
+                newMeta->prev = current;
+                newMeta->next = NULL;
+            }
+            return(current);
         }
-
-        if (page->next)
-            page = page->next;
-        else{
-            temp = page;
-            page->next = add_chunk(heap->pagesize * zonefactor);
-            page = page->next;
-            page->prev = temp;
+        if (meta->next)
+            current = meta->next;
+        else{ //if there is no free space, add a chunk to the zone using mmap.
+            temp = current;
+            meta->next = add_chunk(heap->pagesize * zonefactor);
+            current = meta->next;
+            newMeta = current-meta_size;
+            newMeta->prev = temp;
         }
     }
     return(NULL);
@@ -94,90 +93,95 @@ void            *malloc(size_t size)
     int         sizeOfMeta = sizeof(t_metadata);
     t_metadata  *meta;
 	/// initiate heap head
-	if (!heap){
-        printf("init heap zones\n");
+	if (!heap)
         init_heap();
-	}
     if (size){
         if (size <= heap->TINY_LIMIT)
             ret = allocate_in_zone(&heap->tiny, size, TINY_FACTOR);
         else if (size <= heap->SMALL_LIMIT)
             ret = allocate_in_zone(&heap->small, size, SMALL_FACTOR);
-        else
-            ret = allocate_in_zone(&heap->large, size, (size/heap->pagesize)+1);
+        else{
+            ret = allocate_in_zone(&heap->largeEnd, size, (size/heap->pagesize)+1);
+            heap->largeEnd = ret; // to save time, the serch for free space if not needed\
+                                    large zone.
+        }
     }
-    // while(1)
-    // {
-    //     if (meta->size >= size+)
-    //     {
-
-    //     }
-    // }
-    //  printf("Msize%d\n", sizeof(t_metadata));
 	return(ret);
 }
 
 void free(void *ptr)
 {
+    unsigned int    meta_size = sizeof(t_metadata);
     if (ptr == NULL){
         return;
     }
-    printf("<>>>>>>>>>try to free %p\n",ptr);
+    int deb = 111;
     int     accum = 0;
-    t_page  *current = ptr;
+    void    *current = ptr;
     void    *save_max;
     void    *save_min;
-    void    *temp;
     int     zone_large;
 	t_metadata *meta = ptr - sizeof(t_metadata);
 	meta->isFree = 1;
     zone_large = (meta->size > heap->SMALL_LIMIT) ? 1 : 0;
-    // if (zone_large){
-    //     te
-    // }
-    save_max = current;
-    while (current){
-        temp = current;
-        meta = temp - sizeof(t_metadata);
-        if (meta->isFree){
-            printf("free next\n");
-            accum += meta->size;
+    if (zone_large){ //large zone
+	    t_metadata *meta_munmap = meta;
+        save_min = meta->prev;
+        save_max = meta->next;
+        if  (save_min){
+            meta = save_min - sizeof(t_metadata);
+            meta->next = save_max;
         }
-        else
-            break;
-        save_max = current;
-        current = current->next;
-    }
-    printf("saved_max %p\n", save_max);
-    current = ptr;
-    save_min = current;
-    while (current){
-        current = current->prev;
-        temp = current;
-        meta = temp - sizeof(t_metadata);
-        if (meta->isFree){
-            printf("free prev\n");
-            accum += meta->size;
-            printf("accum %d\n", accum);
+        if (save_max){
+            meta = save_max - sizeof(t_metadata);
+            meta->prev = save_min;
         }
-        else
-            break;
-        save_min = current;
-        if (current->prev == NULL)
-            break;
-        current = current->prev;
-    }
-    printf("saved_min %p\n", save_min);
-    current = save_min;
-    temp = current;
-    meta = temp - sizeof(t_metadata);
-    meta->isFree = 1;
-    meta->size = accum;
-    if (save_max != save_min)
-        current->next = save_max;
-    printf("saved_min %p\n", save_min);
 
-    printf("accum %d\n", accum);
+        if (ptr == heap->large) //in case of free chunk that was the heap head
+            heap->large = meta_munmap->next;
+        if (meta_munmap->next == NULL && meta_munmap->prev == NULL) //..free all chunks of large
+            heap->largeEnd = NULL;
+        
+        deb = munmap(meta_munmap, meta_munmap->size); // munmap remove pages by pagesize*
+        // printf("munmap return %d\n",deb);
+    }
+    else {
+        save_max = current;
+        while (current){ // search for free chunks after ptr to defragment the heap
+            meta = current - sizeof(t_metadata);
+            if (meta->isFree)
+                accum += meta->size;
+            else
+                break;
+            current = meta->next;
+            save_max = current;
+        }
+        printf("saved_max %p\n", save_max);
+        current = ptr;
+        meta = current - sizeof(t_metadata);
+        save_min = current;
+        while (current ){ // search for free chunks before ptr to defrag
+            current = meta->prev;
+            meta = current - sizeof(t_metadata);
+            if (meta->isFree){
+                accum += meta->size;
+            }
+            else
+                break;
+            save_min = current;
+            if (meta->prev == NULL)
+                break;
+        }
+        current = save_min;
+        meta = current - sizeof(t_metadata);
+        meta->isFree = 1;
+        meta->size = accum;
+        if (save_max != save_min)
+            meta->next = save_max;
+        printf("saved_min %p\n", save_min);
+
+        printf("accum %d\n", accum);
+    }
 }
 
 /////////////////////////////////////////test part//////////////////////////////////////////
@@ -192,98 +196,68 @@ void print_bytes(void *ptr, int size)
     printf("\n");
 }
 
-
-int main(){
-    int i = -1;
-    int max = 4;
+void    display()
+{
     t_metadata *meta;
-    void *ptr;
-    void *ptr0[max];
-    void *ptr1[max];
-    void *ptr2[max];
     int c = 1;
-    ptr0[0] = malloc(sizeof(char)*10);
-    while (++i < max){
-        // ptr0[i] = malloc(sizeof(char)*10);
-        ptr1[i] = malloc(6000);
-        ptr2[i] = malloc(12000);
-        // if (ptr){
-        //     meta = ptr-sizeof(t_metadata);
-        //     printf("%p\n", ptr);
-        //     // printf("addr %p\nsize %d\n\n",meta, meta->size);
-        // }
-    }
-    /////////// data test
-
-    i = -1;
-    // char chr = 'A';
-    // char *str;
-    // t_page *p = ptr0[0];
-    // while (p){
-    //     str = p;
-    //     while(++i < 101){
-    //         str[i] = chr;
-    //     }
-    //     c += 2;
-    //     p = p->next;
-    // }
-
-    //////////////
-
-    ////// free test
-    
-    // free(ptr0[1]);
-    // // free(ptr1[1]);
-    // free(ptr0[2]);
-    //////
-    t_page *page = heap->tiny;
-    t_page *save;
+    void *page = heap->tiny;
+    void *save;
+    printf("====\t===========\t==========\n");
     printf("N\tZONE\tPTR\t\tSIZE\tISFREE\tPREV\t\tNEXT\n");
     while(page){
-        ptr = page;
-        meta = ptr - sizeof(t_metadata);
-        printf("%d\ttiny\t%p\t%d\t%d\t", c, ptr, meta->size, meta->isFree);
-        printf("%p\t%p\n",page->prev, page->next);
-        page = page->next;
+        meta = page - sizeof(t_metadata);
+        printf("%d\ttiny\t%p\t%d\t%d\t", c, page, meta->size, meta->isFree);
+        printf("%p\t%p\n",meta->prev, meta->next);
+        page = meta->next;
         c++;
     }
     page = heap->small;
     printf("\n");\
     while(page){
-        ptr = page;
-        meta = ptr - sizeof(t_metadata);
-        printf("%d\tsmall\t%p\t%d\t%d\t", c, ptr, meta->size, meta->isFree);
-        printf("%p\t%p\n",page->prev, page->next);
-        page = page->next;
+        meta = page - sizeof(t_metadata);
+        printf("%d\tsmall\t%p\t%d\t%d\t", c, page, meta->size, meta->isFree);
+        printf("%p\t%p\n",meta->prev, meta->next);
+        page = meta->next;
         c++;
     }
     page = heap->large;
     printf("\n");
     while(page){
-        ptr = page;
-        meta = ptr - sizeof(t_metadata);
-        printf("%d\tLarge\t%p\t%d\t%d\t", c, ptr, meta->size, meta->isFree);
-        printf("%p\t%p\n",page->prev, page->next);
-        if (page->next == NULL)
+        meta = page - sizeof(t_metadata);
+        printf("%d\tLarge\t%p\t%d\t%d\t", c, page, meta->size, meta->isFree);
+        printf("%p\t%p\n",meta->prev, meta->next);
+        if (meta->next == NULL)
             save = page;
-        page = page->next;
+        page = meta->next;
         c++;
     }
     page = save;
-    // printf("----\t----\t----\t\t----\t-\n");
-    // while(page){
-    //     ptr = page;
-    //     meta = ptr - sizeof(t_metadata);
-    //     printf("%d\tLargeR\t%p\t%d\t%d\n", c, ptr, meta->size, meta->isFree);
-    //     page = page->prev;
-    //     c++;
-    // }
-    // strcpy(ptr, "helo");
-    // print_bytes(ptr, 1);
-        // meta = ptr-sizeof(t_metadata);
-        // printf("addr %p\nmera %p\nsize %d\n",ptr, meta, meta->size, meta->isFree);
-    // ptr = malloc(90);
-    // ptr = malloc(2048);
+    return;
+}
+
+int main(){
+    int max = 6;
+    int i = -1;
+    // void *ptr;
+    void *ptr0[max];
+    void *ptr1[max];
+    void *ptr2[max];
+    int c = 1;
+    // ptr0[0] = malloc(sizeof(char)*10);
+    while (++i < max){
+        ptr0[i] = malloc(163);
+        ptr1[i] = malloc(16384);
+        ptr2[i] = malloc(26384);
+    }
+    display();
+    // free(ptr2[4]);
+    free(ptr2[0]);
+    free(ptr2[2]);
+    free(ptr2[3]);
+    // free(ptr2[]);
+    // display();
+    ptr2[4] = malloc(56384);
+    display();
     return (0);
 }
 
