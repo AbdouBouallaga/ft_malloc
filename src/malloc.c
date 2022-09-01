@@ -5,6 +5,44 @@
 
 t_heap *heap = NULL;
 
+void    show_alloc_mem(){
+    t_metadata *meta;
+    int c = 1;
+    void *page = heap->tiny;
+    void *save;
+    printf("====\t===========\t==========\n");
+    printf("N\tZONE\tPTR\t\tSIZE\tISFREE\tPREV\t\tNEXT\n");
+    while(page){
+        meta = page - sizeof(t_metadata);
+        printf("%d\ttiny\t%p\t%d\t%d\t", c, page, meta->size, meta->isFree);
+        printf("%p\t%p\n",meta->prev, meta->next);
+        page = meta->next;
+        c++;
+    }
+    page = heap->small;
+    printf("\n");\
+    while(page){
+        meta = page - sizeof(t_metadata);
+        printf("%d\tsmall\t%p\t%d\t%d\t", c, page, meta->size, meta->isFree);
+        printf("%p\t%p\n",meta->prev, meta->next);
+        page = meta->next;
+        c++;
+    }
+    page = heap->large;
+    printf("\n");
+    while(page){
+        meta = page - sizeof(t_metadata);
+        printf("%d\tLarge\t%p\t%d\t%d\t", c, page, meta->size, meta->isFree);
+        printf("%p\t%p\n",meta->prev, meta->next);
+        if (meta->next == NULL)
+            save = page;
+        page = meta->next;
+        c++;
+    }
+    page = save;
+    return;
+}
+
 void    *add_chunk(size_t size)
 {
     void        *ptr = NULL;
@@ -47,6 +85,7 @@ void            *allocate_in_zone(void **zone, size_t size,size_t zonefactor)
     t_metadata      *meta;
     t_metadata      *newMeta;
     unsigned int    meta_size = sizeof(t_metadata);
+    // printf("ptr %p\tsize %d\tmeta_size %d\n",current, size, meta_size);
     if (current == NULL){
         heap->large = add_chunk(heap->pagesize * zonefactor);
         current = heap->large;
@@ -54,13 +93,11 @@ void            *allocate_in_zone(void **zone, size_t size,size_t zonefactor)
     while (current) // search for free space and return a ptr.
     {
         meta = current-meta_size;
-        if (size > heap->SMALL_LIMIT)
-            printf("ptr %p\nsize %d\nisFree %d\n",current, meta->size, meta->isFree);
         if(meta->isFree && size < meta->size - meta_size){
                 meta->isFree = 0;
             if (size <= heap->SMALL_LIMIT){ 
-                // in preallocated zones, the free space is devided,\
-                take the size you need and define the rest as free space.
+                // in preallocated zones, the free space is devided,
+                // take the size you need and define the rest as free space.
                 new = current+size+meta_size;
                 newMeta = new-meta_size;
                 newMeta->isFree = 1;
@@ -88,10 +125,6 @@ void            *allocate_in_zone(void **zone, size_t size,size_t zonefactor)
 void            *malloc(size_t size)
 {
 	void        *ret = NULL;
-    void        *ptr;
-    int         PageSize = getpagesize();
-    int         sizeOfMeta = sizeof(t_metadata);
-    t_metadata  *meta;
 	/// initiate heap head
 	if (!heap)
         init_heap();
@@ -102,8 +135,7 @@ void            *malloc(size_t size)
             ret = allocate_in_zone(&heap->small, size, SMALL_FACTOR);
         else{
             ret = allocate_in_zone(&heap->largeEnd, size, (size/heap->pagesize)+1);
-            heap->largeEnd = ret; // to save time, the serch for free space if not needed\
-                                    large zone.
+            heap->largeEnd = ret; // to save time, the serch for free space if not needed large zone.
         }
     }
 	return(ret);
@@ -111,7 +143,6 @@ void            *malloc(size_t size)
 
 void free(void *ptr)
 {
-    unsigned int    meta_size = sizeof(t_metadata);
     if (ptr == NULL){
         return;
     }
@@ -123,7 +154,7 @@ void free(void *ptr)
     int     zone_large;
 	t_metadata *meta = ptr - sizeof(t_metadata);
 	meta->isFree = 1;
-    zone_large = (meta->size > heap->SMALL_LIMIT) ? 1 : 0;
+    zone_large = ((size_t)meta->size > heap->SMALL_LIMIT) ? 1 : 0;
     if (zone_large){ //large zone
 	    t_metadata *meta_munmap = meta;
         save_min = meta->prev;
@@ -184,148 +215,5 @@ void free(void *ptr)
     }
 }
 
-/////////////////////////////////////////test part//////////////////////////////////////////
-
-void print_bytes(void *ptr, int size) 
-{
-    unsigned char *p = ptr;
-    int i;
-    for (i=0; i<size; i++) {
-        printf("%02hhX ", p[i]);
-    }
-    printf("\n");
-}
-
-void    display()
-{
-    t_metadata *meta;
-    int c = 1;
-    void *page = heap->tiny;
-    void *save;
-    printf("====\t===========\t==========\n");
-    printf("N\tZONE\tPTR\t\tSIZE\tISFREE\tPREV\t\tNEXT\n");
-    while(page){
-        meta = page - sizeof(t_metadata);
-        printf("%d\ttiny\t%p\t%d\t%d\t", c, page, meta->size, meta->isFree);
-        printf("%p\t%p\n",meta->prev, meta->next);
-        page = meta->next;
-        c++;
-    }
-    page = heap->small;
-    printf("\n");\
-    while(page){
-        meta = page - sizeof(t_metadata);
-        printf("%d\tsmall\t%p\t%d\t%d\t", c, page, meta->size, meta->isFree);
-        printf("%p\t%p\n",meta->prev, meta->next);
-        page = meta->next;
-        c++;
-    }
-    page = heap->large;
-    printf("\n");
-    while(page){
-        meta = page - sizeof(t_metadata);
-        printf("%d\tLarge\t%p\t%d\t%d\t", c, page, meta->size, meta->isFree);
-        printf("%p\t%p\n",meta->prev, meta->next);
-        if (meta->next == NULL)
-            save = page;
-        page = meta->next;
-        c++;
-    }
-    page = save;
-    return;
-}
-
-int main(){
-    int max = 6;
-    int i = -1;
-    // void *ptr;
-    void *ptr0[max];
-    void *ptr1[max];
-    void *ptr2[max];
-    int c = 1;
-    // ptr0[0] = malloc(sizeof(char)*10);
-    while (++i < max){
-        ptr0[i] = malloc(163);
-        ptr1[i] = malloc(16384);
-        ptr2[i] = malloc(26384);
-    }
-    display();
-    // free(ptr2[4]);
-    free(ptr2[0]);
-    free(ptr2[2]);
-    free(ptr2[3]);
-    // free(ptr2[]);
-    // display();
-    ptr2[4] = malloc(56384);
-    display();
-    return (0);
-}
-
-////////////////////////////
 
 
-// typedef struct      s_list{
-//     int             data;
-//     long            link;
-// }                   t_list;
-
-// t_list    *add_blk(int data)
-// {
-//     void *m;
-//     t_list *ret = (t_list *)malloc(sizeof(t_list));
-//     m = ret - sizeof(t_metadata);
-//     printf(">ret %p\n", ret);
-//     printf(">meta %p\n\n", m);
-//     ret->data = data;
-//     return(ret);
-// }
-
-// long xor(t_list *l1, t_list *l2)
-// {
-//     return((long)l1 ^ (long)l2);
-// }
-
-// long *tr_for(t_list *cur, t_list *prev)
-// {
-//     return(xor(prev, cur->link));
-// }
-
-// long *tr_bac(t_list *cur, t_list *next)
-// {
-//     return(xor(next, cur->link));
-// }
-
-
-// int main()
-// {
-//     printf("\n");
-//     int i = 2;
-//     t_list *head = add_blk(1);
-//     t_list *prev;
-//     t_list *cur;
-//     t_list *next = add_blk(2);
-//     t_list *temp;
-//     t_metadata *meta;
-//     head->link = xor(NULL, next);
-//     cur = next;
-//     prev = head;
-//     while (++i < 3){
-//         temp = add_blk(i);
-//         cur->link = xor(prev, temp);
-//         temp->link = xor(NULL, cur);
-//         prev = cur;
-//         cur = temp;
-//     }
-//     i = 0;
-//     cur = head;
-//     prev = NULL;
-//     printf("\n");
-//     // while(++i < 11){
-//     //     meta = cur - sizeof(t_metadata);
-//     //     printf("addr: %p\nMetadata:\nsize = %d\nisfree = %d\n\n", cur, meta->size, meta->isFree);
-//     //     next = tr_for(cur, prev);
-//     //     prev = cur;
-//     //     cur = next;
-//     // }
-//     return(0);
-// }

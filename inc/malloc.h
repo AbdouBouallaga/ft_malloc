@@ -1,9 +1,10 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/mman.h>
+#ifndef MALLOC_H
+#define MALLOC_H
 
-#include <string.h>
+#include <sys/mman.h>
+#include <unistd.h>
+#include <stdio.h>
+
 
 
 #define PROT    PROT_READ|PROT_WRITE
@@ -23,21 +24,24 @@ typedef struct		s_heap
 	void			*large;
 	void			*largeEnd;
 	int				pagesize;
-	int				TINY_LIMIT;
-	int				SMALL_LIMIT;
+	size_t			TINY_LIMIT;
+	size_t			SMALL_LIMIT;
 
 }					t_heap;
 
 
 typedef struct		s_metadata
 {
-	unsigned int	size;
+	int				size;
 	unsigned int	isFree;
-	void			*next;
 	void			*prev;
+	void			*next;
 }					t_metadata;
 
 
+void show_alloc_mem();
 void free(void *ptr);
 void *malloc(size_t size);
 void *realloc(void *ptr, size_t size);
+
+#endif

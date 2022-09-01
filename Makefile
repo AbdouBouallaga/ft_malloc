@@ -1,14 +1,23 @@
-SRC_DIR=./src/
-INC_DIR=./inc/
+SRC_DIR	= ./src/
+INC_DIR	= ./inc/
+LIB_DIR = ./lib/
+SRC	= $(SRC_DIR)malloc.c
+OBJ	= $(SRC:.c=.o)
+CFLAGS = -fPIC -Wall -Wextra -Werror
 
-all: $(SRC_DIR)malloc.o
-	gcc -g -I $(INC_DIR)malloc.h $(SRC_DIR)malloc.o
-	rm $(SRC_DIR)malloc.o
+ifeq ($(HOSTTYPE),)
+	HOSTTYPE := $(shell uname -m)_$(shell uname -s)
+endif
+
+all: $(OBJ)
+	gcc -o libft_malloc_$(HOSTTYPE).so $(SRC_DIR)malloc.c $(CFLAGS) -shared
+	-ln -s libft_malloc_$(HOSTTYPE).so libft_malloc.so
 
 clean:
-	rm a.out
+	-rm $(SRC_DIR)malloc.o
 
-test: all
-	./a.out
+fclean: clean
+	-rm libft_malloc.so
+	-rm libft_malloc_$(HOSTTYPE).so
 
-re: clean all
+re: fclean all
