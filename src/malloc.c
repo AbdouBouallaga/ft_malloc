@@ -1,9 +1,9 @@
 #include "../inc/malloc.h"
 
-
 /// GLOBAL VARIABLE HEAP
 
 t_heap *heap = NULL;
+pthread_mutex_t mutex; // we only have 1 critical ressource, the heap, so we don't worry about locking hierarchie.
 
 void    show_alloc_mem(){
     t_metadata *meta;
@@ -14,7 +14,7 @@ void    show_alloc_mem(){
     printf("N\tZONE\tPTR\t\tSIZE\tISFREE\tPREV\t\tNEXT\n");
     while(page){
         meta = page - sizeof(t_metadata);
-        printf("%d\ttiny\t%p\t%d\t%d\t", c, page, meta->size, meta->isFree);
+        printf("%d\ttiny\t%p\t%zu\t%d\t", c, page, meta->size, meta->isFree);
         printf("%p\t%p\n",meta->prev, meta->next);
         page = meta->next;
         c++;
@@ -23,7 +23,7 @@ void    show_alloc_mem(){
     printf("\n");\
     while(page){
         meta = page - sizeof(t_metadata);
-        printf("%d\tsmall\t%p\t%d\t%d\t", c, page, meta->size, meta->isFree);
+        printf("%d\tsmall\t%p\t%zu\t%d\t", c, page, meta->size, meta->isFree);
         printf("%p\t%p\n",meta->prev, meta->next);
         page = meta->next;
         c++;
@@ -32,7 +32,7 @@ void    show_alloc_mem(){
     printf("\n");
     while(page){
         meta = page - sizeof(t_metadata);
-        printf("%d\tLarge\t%p\t%d\t%d\t", c, page, meta->size, meta->isFree);
+        printf("%d\tLarge\t%p\t%zu\t%d\t", c, page, meta->size, meta->isFree);
         printf("%p\t%p\n",meta->prev, meta->next);
         if (meta->next == NULL)
             save = page;
@@ -68,7 +68,6 @@ void    init_heap()
 {
     heap = mmap(0, sizeof(t_heap), PROT, MAP,0, 0);
     heap->pagesize = getpagesize();
-    printf("PageSize%d\n\n", heap->pagesize);
     heap->TINY_LIMIT = heap->pagesize/2;
     heap->SMALL_LIMIT = heap->pagesize;
 
@@ -77,15 +76,13 @@ void    init_heap()
     heap->large = NULL;
 }
 
-void            *allocate_in_zone(void **zone, size_t size,size_t zonefactor)
+void            *allocate_in_zone(void *current, size_t size,size_t zonefactor)
 {
-    void            *current = *zone;
     void            *new;
     void            *temp;
     t_metadata      *meta;
     t_metadata      *newMeta;
     unsigned int    meta_size = sizeof(t_metadata);
-    // printf("ptr %p\tsize %d\tmeta_size %d\n",current, size, meta_size);
     if (current == NULL){
         heap->large = add_chunk(heap->pagesize * zonefactor);
         current = heap->large;
@@ -126,23 +123,26 @@ void            *malloc(size_t size)
 {
 	void        *ret = NULL;
 	/// initiate heap head
+    pthread_mutex_lock(&mutex);
 	if (!heap)
         init_heap();
     if (size){
         if (size <= heap->TINY_LIMIT)
-            ret = allocate_in_zone(&heap->tiny, size, TINY_FACTOR);
+            ret = allocate_in_zone(heap->tiny, size, TINY_FACTOR);
         else if (size <= heap->SMALL_LIMIT)
-            ret = allocate_in_zone(&heap->small, size, SMALL_FACTOR);
+            ret = allocate_in_zone(heap->small, size, SMALL_FACTOR);
         else{
-            ret = allocate_in_zone(&heap->largeEnd, size, (size/heap->pagesize)+1);
+            ret = allocate_in_zone(heap->largeEnd, size, (size/heap->pagesize)+1);
             heap->largeEnd = ret; // to save time, the serch for free space if not needed large zone.
         }
     }
+    pthread_mutex_unlock(&mutex);
 	return(ret);
 }
 
 void free(void *ptr)
 {
+    pthread_mutex_lock(&mutex);
     if (ptr == NULL){
         return;
     }
@@ -174,7 +174,6 @@ void free(void *ptr)
             heap->largeEnd = NULL;
         
         deb = munmap(meta_munmap, meta_munmap->size); // munmap remove pages by pagesize*
-        // printf("munmap return %d\n",deb);
     }
     else {
         save_max = current;
@@ -187,7 +186,6 @@ void free(void *ptr)
             current = meta->next;
             save_max = current;
         }
-        printf("saved_max %p\n", save_max);
         current = ptr;
         meta = current - sizeof(t_metadata);
         save_min = current;
@@ -209,11 +207,26 @@ void free(void *ptr)
         meta->size = accum;
         if (save_max != save_min)
             meta->next = save_max;
-        printf("saved_min %p\n", save_min);
-
-        printf("accum %d\n", accum);
     }
+    pthread_mutex_unlock(&mutex);
 }
 
-
+void    *realloc(void *ptr, size_t size){
+    char *ret;
+    char *old = ptr;
+    t_metadata *meta = ptr - sizeof(t_metadata);
+    t_metadata *newmeta = ptr - sizeof(t_metadata);
+    meta->isFree = 1;
+    newmeta = meta->next - sizeof(t_metadata);
+    ret = malloc(size);
+    int i = -1;
+    if (ret != NULL)
+    if (size > meta->size){
+        size = meta->size;
+    }
+    while (++i <= (int)size){
+        ret[i] = old[i];
+    }
+    return (ret);
+}
 

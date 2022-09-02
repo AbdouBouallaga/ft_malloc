@@ -2,6 +2,7 @@
 #define MALLOC_H
 
 #include <sys/mman.h>
+#include <pthread.h>
 #include <unistd.h>
 #include <stdio.h>
 
@@ -32,7 +33,7 @@ typedef struct		s_heap
 
 typedef struct		s_metadata
 {
-	int				size;
+	size_t			size;
 	unsigned int	isFree;
 	void			*prev;
 	void			*next;
