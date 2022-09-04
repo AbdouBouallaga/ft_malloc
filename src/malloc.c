@@ -147,7 +147,6 @@ void free(void *ptr)
     if (ptr == NULL){
         return;
     }
-    int deb = 111;
     int     accum = 0;
     void    *current = ptr;
     void    *save_max;
@@ -174,7 +173,7 @@ void free(void *ptr)
         if (meta_munmap->next == NULL && meta_munmap->prev == NULL) //..free all chunks of large
             heap->largeEnd = NULL;
         
-        deb = munmap(meta_munmap, meta_munmap->size); // munmap remove pages by pagesize*
+        munmap(meta_munmap, meta_munmap->size); // munmap remove pages by pagesize*
     }
     else {
         save_max = current;
@@ -216,9 +215,9 @@ void    *realloc(void *ptr, size_t size){
     char *ret;
     char *old = ptr;
     t_metadata *meta = ptr - sizeof(t_metadata);
-    t_metadata *newmeta = ptr - sizeof(t_metadata);
+    // t_metadata *newmeta = ptr - sizeof(t_metadata);
     meta->isFree = 1;
-    newmeta = meta->next - sizeof(t_metadata);
+    // newmeta = meta->next - sizeof(t_metadata);
     ret = malloc(size);
     int i = -1;
     if (ret != NULL)

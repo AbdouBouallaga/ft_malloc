@@ -20,12 +20,15 @@ $(LFT):
 
 clean:
 	-rm $(SRC_DIR)malloc.o
-	@make -C ./libft clean
+	make -C ./libft clean
+	make -C ./test clean
 
 fclean: clean
 	-rm libft_malloc.so
 	-rm libft_malloc_$(HOSTTYPE).so
 	make -C ./libft fclean
+	make -C ./test fclean
+
 
 tst: all
 	make -C ./test
