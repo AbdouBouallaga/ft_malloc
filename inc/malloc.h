@@ -5,7 +5,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <stdio.h>
-
+#include "../libft/libft.h"
 
 
 #define PROT    PROT_READ|PROT_WRITE

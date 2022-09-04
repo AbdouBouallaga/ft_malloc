@@ -5,41 +5,42 @@
 t_heap *heap = NULL;
 pthread_mutex_t mutex; // we only have 1 critical ressource, the heap, so we don't worry about locking hierarchie.
 
-void    show_alloc_mem(){
-    t_metadata *meta;
+void    write_hex(int ch){
+    int a = ch/16;
+    int i = -1;
+    while (++i < 2){
+        if (a < 10)
+            a = '0' + a;
+        else
+            a = 'A' + a - 10;
+        ft_putchar(a);
+        a = ch%16;
+    }
+}
+
+void    write_info(void *page, char *type)
+{
     int c = 1;
-    void *page = heap->tiny;
-    void *save;
-    printf("====\t===========\t==========\n");
-    printf("N\tZONE\tPTR\t\tSIZE\tISFREE\tPREV\t\tNEXT\n");
+    t_metadata *meta;
     while(page){
         meta = page - sizeof(t_metadata);
-        printf("%d\ttiny\t%p\t%zu\t%d\t", c, page, meta->size, meta->isFree);
+        printf("%d\t%s\t%p\t%zu\t%d\t", c,type, page, meta->size, meta->isFree);
         printf("%p\t%p\n",meta->prev, meta->next);
         page = meta->next;
         c++;
     }
-    page = heap->small;
-    printf("\n");\
-    while(page){
-        meta = page - sizeof(t_metadata);
-        printf("%d\tsmall\t%p\t%zu\t%d\t", c, page, meta->size, meta->isFree);
-        printf("%p\t%p\n",meta->prev, meta->next);
-        page = meta->next;
-        c++;
-    }
-    page = heap->large;
+}
+
+void    show_alloc_mem(){
+    ft_putchar('\n');
+    ft_putchar('\n');
+    ft_putstr("N\tZONE\tPTR\t\tSIZE\tISFREE\tPREV\t\tNEXT\n");
+    write_info(heap->tiny, "tiny");
     printf("\n");
-    while(page){
-        meta = page - sizeof(t_metadata);
-        printf("%d\tLarge\t%p\t%zu\t%d\t", c, page, meta->size, meta->isFree);
-        printf("%p\t%p\n",meta->prev, meta->next);
-        if (meta->next == NULL)
-            save = page;
-        page = meta->next;
-        c++;
-    }
-    page = save;
+    write_info(heap->small, "small");
+    printf("\n");
+    write_info(heap->large, "large");
+    printf("\n");
     return;
 }
 

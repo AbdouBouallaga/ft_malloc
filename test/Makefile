@@ -2,16 +2,16 @@ NAME = malloc_test
 SRC = test.c
 OBJ	= $(SRC:.c=.o)
 CFLAGS	=-Wall -Wextra -Werror
-MALLOC_LIB = libft_malloc.so
+MALLOC_LIB = ../libft_malloc.so
 
 
-all: ./test/$(OBJ)
-	gcc $(CFLAGS) ./test/$(OBJ) $(MALLOC_LIB) -o $(NAME)
+all: $(OBJ)
+	gcc $(CFLAGS) $(OBJ) $(MALLOC_LIB) ../libft/libft.a -o ../$(NAME)
 
 clean:
-	-rm ./test/$(OBJ)
+	-rm $(OBJ)
 
 fclean: clean
-	-rm $(NAME)
+	-rm ../$(NAME)
 
-re: fclean all
+re: fclean allgit
