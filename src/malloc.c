@@ -6,15 +6,44 @@ t_heap *heap = NULL;
 pthread_mutex_t mutex; // we only have 1 critical ressource, the heap, so we don't worry about locking hierarchie.
 
 void    write_hex(int ch){
+    if (ch >= 0 && ch < 10)
+        ch = '0' + ch;
+    else
+        ch = 'a' + ch - 10;
+    ft_putchar(ch);
+}
+
+void    hex_dump(int ch){
     int a = ch/16;
     int i = -1;
     while (++i < 2){
         if (a < 10)
             a = '0' + a;
         else
-            a = 'A' + a - 10;
+            a = 'a' + a - 10;
         ft_putchar(a);
         a = ch%16;
+    }
+}
+
+void    write_address(long ptr)
+{
+    long num = ptr;
+    int tab[16];
+    int i = 0;
+    if ((void*)ptr == NULL)
+        ft_putstr("NULL\t");
+    else{
+        ft_putstr("0x");
+        while (num){
+            tab[i] = num%16;
+            i++;
+            num = num/16;
+        }
+        while (i >= 0){
+            write_hex(tab[i]);
+            i--;
+        }
     }
 }
 
@@ -24,11 +53,54 @@ void    write_info(void *page, char *type)
     t_metadata *meta;
     while(page){
         meta = page - sizeof(t_metadata);
-        printf("%d\t%s\t%p\t%zu\t%d\t", c,type, page, meta->size, meta->isFree);
-        printf("%p\t%p\n",meta->prev, meta->next);
+        ft_putnbr(c);
+        ft_putchar('\t');
+        ft_putstr(type);
+        ft_putchar('\t');
+        write_address((long)page);
+        ft_putchar('\t');
+        ft_putnbr(meta->size-sizeof(t_metadata));
+        ft_putchar('\t');
+        ft_putnbr(meta->isFree);
+        ft_putchar('\t');
+        write_address((long)meta->prev);
+        ft_putchar('\t');
+        write_address((long)meta->next);
+        ft_putchar('\n');
         page = meta->next;
         c++;
     }
+}
+
+void show_alloc_mem_ex(void *ptr, int deb) 
+{
+    unsigned char *p = ptr;
+    t_metadata *meta = ptr - sizeof(t_metadata);
+    int i = -1;
+    int size;
+    if (deb){
+        size = meta->size;
+        p = ptr - sizeof(t_metadata);
+    }
+    else
+        size = meta->size - sizeof(t_metadata);
+    int c = 0;
+    int d = 0;
+    while (++i < size){
+        hex_dump((p[i]));
+        ft_putchar(' ');
+        c++;
+        d++;
+        if (c == 4){
+            ft_putchar(' ');
+            c = 0;
+        }
+        if (d == 16){
+            ft_putchar('\n');
+            d = 0;
+        }
+    }
+    printf("\n");
 }
 
 void    show_alloc_mem(){
@@ -36,11 +108,11 @@ void    show_alloc_mem(){
     ft_putchar('\n');
     ft_putstr("N\tZONE\tPTR\t\tSIZE\tISFREE\tPREV\t\tNEXT\n");
     write_info(heap->tiny, "tiny");
-    printf("\n");
+    ft_putchar('\n');
     write_info(heap->small, "small");
-    printf("\n");
+    ft_putchar('\n');
     write_info(heap->large, "large");
-    printf("\n");
+    ft_putchar('\n');
     return;
 }
 
@@ -211,22 +283,15 @@ void free(void *ptr)
     pthread_mutex_unlock(&mutex);
 }
 
-void    *realloc(void *ptr, size_t size){
-    char *ret;
-    char *old = ptr;
-    t_metadata *meta = ptr - sizeof(t_metadata);
-    // t_metadata *newmeta = ptr - sizeof(t_metadata);
-    meta->isFree = 1;
-    // newmeta = meta->next - sizeof(t_metadata);
-    ret = malloc(size);
-    int i = -1;
-    if (ret != NULL)
-    if (size > meta->size){
-        size = meta->size;
-    }
-    while (++i <= (int)size){
-        ret[i] = old[i];
-    }
-    return (ret);
-}
+// void    *realloc(void *ptr, size_t size){
+//     char *ret;
+//     char *old = ptr;
+//     t_metadata *meta = ptr - sizeof(t_metadata);
+//     t_metadata *newmeta = ptr - sizeof(t_metadata);
+//     meta->isFree = 1;
+//     newmeta = meta->next - sizeof(t_metadata);
+//     if ((meta->size - sizeof(t_metadata)) + (newmeta->size - sizeof(t_metadata)) >= size){
+
+//     }
+// }
 

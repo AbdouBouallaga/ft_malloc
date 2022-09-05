@@ -1,67 +1,6 @@
 
 #include "test.h"
 
-/////////////////////////////////////////test part//////////////////////////////////////////
-
-void    write_hex(int ch){
-    int a = ch/16;
-    int i = -1;
-    while (++i < 2){
-        if (a < 10)
-            a = '0' + a;
-        else
-            a = 'A' + a - 10;
-        ft_putchar(a);
-        a = ch%16;
-    }
-}
-
-// void print_bytes(void *ptr, int size) 
-// {
-//     unsigned char *p = ptr;
-//     int i;
-//     int c = 0;
-//     int d = 0;
-//     for (i=0; i<size; i++) {
-//         printf("%02hhX ", p[i]);
-//         c++;
-//         d++;
-//         if (c == 4){
-//             printf(" ");
-//             c = 0;
-//         }
-//         if (d == 16){
-//             printf("\n");
-//             d = 0;
-//         }
-
-//     }
-//     printf("\n");
-// }
-void print_bytes(void *ptr, int size) 
-{
-    unsigned char *p = ptr;
-    int i;
-    int c = 0;
-    int d = 0;
-    for (i=0; i<size; i++) {
-        write_hex((p[i]));
-        ft_putchar(' ');
-        c++;
-        d++;
-        if (c == 4){
-            ft_putchar(' ');
-            c = 0;
-        }
-        if (d == 16){
-            ft_putchar('\n');
-            d = 0;
-        }
-
-    }
-    printf("\n");
-}
-
 int main(){
     char *str1 = (char *)malloc(sizeof(char)*17);
     // free(str1);
@@ -83,6 +22,7 @@ int main(){
         str2[i] = 'a';
     }
     str2[i] = '\0';
+    show_alloc_mem_ex(str3, 0);
     // str1[i] = '\0';
     // i = -1;
     // while(++i < 16){

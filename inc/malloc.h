@@ -41,6 +41,7 @@ typedef struct		s_metadata
 
 
 void show_alloc_mem();
+void show_alloc_mem_ex(void *ptr, int deb); // deb 1 will dump all chunk content "include allocation meta data". 0 will only dump the content.
 void free(void *ptr);
 void *malloc(size_t size);
 void *realloc(void *ptr, size_t size);
