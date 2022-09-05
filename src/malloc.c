@@ -26,20 +26,20 @@ void    hex_dump(int ch){
     }
 }
 
-void    write_address(long ptr)
+void    write_address(unsigned long long num)
 {
-    long num = ptr;
     int tab[16];
     int i = 0;
-    if ((void*)ptr == NULL)
+    if ((void*)num == NULL)
         ft_putstr("NULL\t");
     else{
         ft_putstr("0x");
         while (num){
             tab[i] = num%16;
-            i++;
             num = num/16;
+            i++;
         }
+        i--;
         while (i >= 0){
             write_hex(tab[i]);
             i--;
@@ -57,15 +57,15 @@ void    write_info(void *page, char *type)
         ft_putchar('\t');
         ft_putstr(type);
         ft_putchar('\t');
-        write_address((long)page);
+        write_address((unsigned long)page);
         ft_putchar('\t');
         ft_putnbr(meta->size-sizeof(t_metadata));
         ft_putchar('\t');
         ft_putnbr(meta->isFree);
         ft_putchar('\t');
-        write_address((long)meta->prev);
+        write_address((unsigned long)meta->prev);
         ft_putchar('\t');
-        write_address((long)meta->next);
+        write_address((unsigned long)meta->next);
         ft_putchar('\n');
         page = meta->next;
         c++;
