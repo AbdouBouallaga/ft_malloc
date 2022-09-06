@@ -57,15 +57,15 @@ void    write_info(void *page, char *type)
         ft_putchar('\t');
         ft_putstr(type);
         ft_putchar('\t');
-        write_address((unsigned long)page);
+        write_address((unsigned long long)page);
         ft_putchar('\t');
         ft_putnbr(meta->size-sizeof(t_metadata));
         ft_putchar('\t');
         ft_putnbr(meta->isFree);
         ft_putchar('\t');
-        write_address((unsigned long)meta->prev);
+        write_address((unsigned long long)meta->prev);
         ft_putchar('\t');
-        write_address((unsigned long)meta->next);
+        write_address((unsigned long long)meta->next);
         ft_putchar('\n');
         page = meta->next;
         c++;
@@ -221,7 +221,7 @@ void            *malloc(size_t size)
             ret = allocate_in_zone(heap->small, size, SMALL_FACTOR);
         else{
             ret = allocate_in_zone(heap->largeEnd, size, (size/heap->pagesize)+1);
-            heap->largeEnd = ret; // to save time, the serch for free space if not needed large zone.
+            heap->largeEnd = ret; // since large zone use mmap everytime, the search for free space start from the last chunk,'no free space -> allocate using mmap'
         }
     }
     pthread_mutex_unlock(&mutex);
