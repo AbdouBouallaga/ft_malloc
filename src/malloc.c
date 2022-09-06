@@ -202,7 +202,7 @@ void            *malloc(size_t size)
 {
 	void        *ret = NULL;
 	/// initiate heap head
-    ft_putstr("hello\n");
+    sleep(1000);
     pthread_mutex_lock(&mutex);
 	if (!heap)
         init_heap();

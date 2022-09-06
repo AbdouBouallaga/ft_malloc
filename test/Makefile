@@ -1,5 +1,5 @@
 NAME = malloc_test
-SRC = test_apple.c
+SRC = test.c
 OBJ	= $(SRC:.c=.o)
 # CFLAGS	=-Wall -Wextra -Werror
 CFLAGS	=
