@@ -20,8 +20,6 @@ $(LFT):
 
 clean:
 	-rm $(SRC_DIR)malloc.o
-	make -C ./libft clean
-	make -C ./test clean
 
 fclean: clean
 	-rm libft_malloc.so

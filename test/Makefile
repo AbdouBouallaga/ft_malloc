@@ -10,7 +10,7 @@ all: $(OBJ)
 	gcc $(CFLAGS) $(OBJ) $(MALLOC_LIB) ../libft/libft.a -o ../$(NAME)
 
 clean:
-	-rm *.o
+	-rm $(OBJ)
 
 fclean: clean
 	-rm ../$(NAME)

@@ -74,18 +74,26 @@ void    write_info(void *page, char *type)
 
 void show_alloc_mem_ex(void *ptr, int deb) 
 {
+    ft_putstr("Memory dump of ");
+    write_address((unsigned long)ptr);
+
     unsigned char *p = ptr;
     t_metadata *meta = ptr - sizeof(t_metadata);
     int i = -1;
     int size;
     if (deb){
+        ft_putstr(" including metadata\n\n");
         size = meta->size;
         p = ptr - sizeof(t_metadata);
     }
-    else
+    else {
+        ft_putstr(" content only\n\n");
         size = meta->size - sizeof(t_metadata);
+    }
     int c = 0;
     int d = 0;
+    write_address((unsigned long)p);
+    ft_putchar('\t');
     while (++i < size){
         hex_dump((p[i]));
         ft_putchar(' ');
@@ -97,14 +105,16 @@ void show_alloc_mem_ex(void *ptr, int deb)
         }
         if (d == 16){
             ft_putchar('\n');
+            write_address((unsigned long)p+i);
+            ft_putchar('\t');
             d = 0;
         }
     }
-    printf("\n");
+    ft_putchar('\n');
+    ft_putchar('\n');
 }
 
 void    show_alloc_mem(){
-    ft_putchar('\n');
     ft_putchar('\n');
     ft_putstr("Sizeof Metadata: ");
     ft_putnbr(sizeof(t_metadata));
@@ -201,8 +211,6 @@ void            *allocate_in_zone(void *current, size_t size,size_t zonefactor)
 void            *malloc(size_t size)
 {
 	void        *ret = NULL;
-	/// initiate heap head
-    sleep(1000);
     pthread_mutex_lock(&mutex);
 	if (!heap)
         init_heap();
@@ -268,8 +276,8 @@ void free(void *ptr)
         current = ptr;
         meta = current - sizeof(t_metadata);
         save_min = current;
+        current = meta->prev;
         while (current ){ // search for free chunks before ptr to defrag
-            current = meta->prev;
             meta = current - sizeof(t_metadata);
             if (meta->isFree){
                 accum += meta->size;
@@ -279,6 +287,7 @@ void free(void *ptr)
             save_min = current;
             if (meta->prev == NULL)
                 break;
+            current = meta->prev;
         }
         current = save_min;
         meta = current - sizeof(t_metadata);
@@ -292,7 +301,7 @@ void free(void *ptr)
 
 void    *realloc(void *ptr, size_t size){
     void *ret = NULL;
-    // void *old = ptr;
+    pthread_mutex_lock(&mutex);
     t_metadata *meta = ptr - sizeof(t_metadata);
     t_metadata *nextmeta = meta->next - sizeof(t_metadata);
     if (nextmeta->isFree && (meta->size - sizeof(t_metadata)) + (nextmeta->size) == size){ // if realloc will use exacly all the next free chunk
@@ -304,9 +313,7 @@ void    *realloc(void *ptr, size_t size){
     }
     else if (nextmeta->isFree && (meta->size - sizeof(t_metadata)) + (nextmeta->size) > size){ // if realloc will use less than the avalable free space
         void *save_next = nextmeta->next;
-        printf("%p\n",save_next);
         size_t save_size = nextmeta->size;
-        printf("%lu\n",save_size);
         meta->next = ptr + size + sizeof(t_metadata);
         t_metadata *midmeta = meta->next - sizeof(t_metadata);
         midmeta->size = save_size - ( size - (meta->size-sizeof(t_metadata)));
@@ -322,12 +329,14 @@ void    *realloc(void *ptr, size_t size){
         ret = malloc(size);
         size_t i = -1;
         size_t len = meta->size - sizeof(t_metadata);
-        char *copy = ret;
+        char *dst = ret;
+        char *src = ptr;
         while (++i < len){
-            copy[i] = (char)ptr+i;
+            dst[i] = src[i];
         }
         free(ptr);
     }
+    pthread_mutex_unlock(&mutex);
     return(ret);
 }
 
