@@ -106,6 +106,13 @@ void show_alloc_mem_ex(void *ptr, int deb)
 void    show_alloc_mem(){
     ft_putchar('\n');
     ft_putchar('\n');
+    ft_putstr("Sizeof Metadata: ");
+    ft_putnbr(sizeof(t_metadata));
+    ft_putchar('\n');
+    ft_putstr("System Pagesize: ");
+    ft_putnbr(heap->pagesize);
+    ft_putchar('\n');
+    ft_putchar('\n');
     ft_putstr("N\tZONE\tPTR\t\tSIZE\tISFREE\tPREV\t\tNEXT\n");
     write_info(heap->tiny, "tiny");
     ft_putchar('\n');
@@ -120,9 +127,8 @@ void    *add_chunk(size_t size)
 {
     void        *ptr = NULL;
     t_metadata  *meta;
-    int         sizeofmeta = sizeof(t_metadata);
 
-    meta = mmap(0, size+sizeofmeta, PROT, MAP,0, 0);
+    meta = mmap(0, size+sizeof(t_metadata), PROT, MAP,0, 0);
     if (meta != NULL){
 	    meta->size = size;
 	    meta->isFree = 1;
@@ -154,7 +160,7 @@ void            *allocate_in_zone(void *current, size_t size,size_t zonefactor)
     void            *new;
     void            *temp;
     t_metadata      *meta;
-    t_metadata      *newMeta;
+    t_metadata      *nextMeta;
     unsigned int    meta_size = sizeof(t_metadata);
     if (current == NULL){
         heap->large = add_chunk(heap->pagesize * zonefactor);
@@ -169,13 +175,13 @@ void            *allocate_in_zone(void *current, size_t size,size_t zonefactor)
                 // in preallocated zones, the free space is devided,
                 // take the size you need and define the rest as free space.
                 new = current+size+meta_size;
-                newMeta = new-meta_size;
-                newMeta->isFree = 1;
-                newMeta->size = meta->size - size - meta_size;
+                nextMeta = new-meta_size;
+                nextMeta->isFree = 1;
+                nextMeta->size = meta->size - size - meta_size;
                 meta->size = size+meta_size;
                 meta->next = new;
-                newMeta->prev = current;
-                newMeta->next = NULL;
+                nextMeta->prev = current;
+                nextMeta->next = NULL;
             }
             return(current);
         }
@@ -185,8 +191,8 @@ void            *allocate_in_zone(void *current, size_t size,size_t zonefactor)
             temp = current;
             meta->next = add_chunk(heap->pagesize * zonefactor);
             current = meta->next;
-            newMeta = current-meta_size;
-            newMeta->prev = temp;
+            nextMeta = current-meta_size;
+            nextMeta->prev = temp;
         }
     }
     return(NULL);
@@ -196,6 +202,7 @@ void            *malloc(size_t size)
 {
 	void        *ret = NULL;
 	/// initiate heap head
+    ft_putstr("hello\n");
     pthread_mutex_lock(&mutex);
 	if (!heap)
         init_heap();
@@ -283,15 +290,44 @@ void free(void *ptr)
     pthread_mutex_unlock(&mutex);
 }
 
-// void    *realloc(void *ptr, size_t size){
-//     char *ret;
-//     char *old = ptr;
-//     t_metadata *meta = ptr - sizeof(t_metadata);
-//     t_metadata *newmeta = ptr - sizeof(t_metadata);
-//     meta->isFree = 1;
-//     newmeta = meta->next - sizeof(t_metadata);
-//     if ((meta->size - sizeof(t_metadata)) + (newmeta->size - sizeof(t_metadata)) >= size){
-
-//     }
-// }
+void    *realloc(void *ptr, size_t size){
+    void *ret = NULL;
+    // void *old = ptr;
+    t_metadata *meta = ptr - sizeof(t_metadata);
+    t_metadata *nextmeta = meta->next - sizeof(t_metadata);
+    if (nextmeta->isFree && (meta->size - sizeof(t_metadata)) + (nextmeta->size) == size){ // if realloc will use exacly all the next free chunk
+        meta->size += nextmeta->size;
+        meta->next = nextmeta->next;
+        nextmeta = meta->next - sizeof(t_metadata);
+        nextmeta->prev = ptr;
+        ret = ptr;
+    }
+    else if (nextmeta->isFree && (meta->size - sizeof(t_metadata)) + (nextmeta->size) > size){ // if realloc will use less than the avalable free space
+        void *save_next = nextmeta->next;
+        printf("%p\n",save_next);
+        size_t save_size = nextmeta->size;
+        printf("%lu\n",save_size);
+        meta->next = ptr + size + sizeof(t_metadata);
+        t_metadata *midmeta = meta->next - sizeof(t_metadata);
+        midmeta->size = save_size - ( size - (meta->size-sizeof(t_metadata)));
+        midmeta->next = save_next;
+        midmeta->prev = ptr;
+        midmeta->isFree = 1;
+        nextmeta = save_next - sizeof(t_metadata);
+        nextmeta->prev = midmeta + sizeof(t_metadata);
+        meta->size = size + sizeof(t_metadata);
+        ret = nextmeta->prev;
+    }
+    else{
+        ret = malloc(size);
+        size_t i = -1;
+        size_t len = meta->size - sizeof(t_metadata);
+        char *copy = ret;
+        while (++i < len){
+            copy[i] = (char)ptr+i;
+        }
+        free(ptr);
+    }
+    return(ret);
+}
 

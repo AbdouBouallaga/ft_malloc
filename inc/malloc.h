@@ -33,8 +33,8 @@ typedef struct		s_heap
 
 typedef struct		s_metadata
 {
+	size_t			isFree;
 	size_t			size;
-	unsigned int	isFree;
 	void			*prev;
 	void			*next;
 }					t_metadata;

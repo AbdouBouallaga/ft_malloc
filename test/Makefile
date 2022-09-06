@@ -1,7 +1,8 @@
 NAME = malloc_test
-SRC = test.c
+SRC = test_apple.c
 OBJ	= $(SRC:.c=.o)
-CFLAGS	=-Wall -Wextra -Werror
+# CFLAGS	=-Wall -Wextra -Werror
+CFLAGS	=
 MALLOC_LIB = ../libft_malloc.so
 
 
@@ -9,7 +10,7 @@ all: $(OBJ)
 	gcc $(CFLAGS) $(OBJ) $(MALLOC_LIB) ../libft/libft.a -o ../$(NAME)
 
 clean:
-	-rm $(OBJ)
+	-rm *.o
 
 fclean: clean
 	-rm ../$(NAME)
