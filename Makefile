@@ -10,10 +10,19 @@ ifeq ($(HOSTTYPE),)
 	HOSTTYPE := $(shell uname -m)_$(shell uname -s)
 endif
 
+NAME = $(LIB_DIR)libft_malloc_$(HOSTTYPE).so
+LINK = libft_malloc.so
 
-all: $(OBJ) $(LFT)
-	gcc -o libft_malloc_$(HOSTTYPE).so $(OBJ) $(LFT) $(CFLAGS) -shared
-	-ln -s libft_malloc_$(HOSTTYPE).so libft_malloc.so
+CC = rm $(NAME) 2>/dev/null | cc
+
+
+all: $(OBJ) $(NAME) $(LINK)
+
+$(NAME): $(LFT)
+	gcc -o $(NAME) $(OBJ) $(LFT) $(CFLAGS) -shared
+
+$(LINK):
+	-ln $(NAME) $(LINK)
 
 $(LFT):
 	make -C ./libft
@@ -22,14 +31,13 @@ clean:
 	-rm $(SRC_DIR)malloc.o
 
 fclean: clean
-	-rm libft_malloc.so
-	-rm libft_malloc_$(HOSTTYPE).so
+	-rm $(NAME)
+	-rm $(LINK)
 	make -C ./libft fclean
 	make -C ./test fclean
 
+re: fclean all
 
 tst: all
-	make -C ./test
+	make -C ./test re
 	./malloc_test
-
-re: fclean all

@@ -11,9 +11,7 @@
 #define MAP     MAP_SHARED|MAP_ANONYMOUS
 
 #define TINY_FACTOR     5
-// #define TINY_LIMIT      256
 #define SMALL_FACTOR	5
-// #define SMALL_LIMIT     1024
 
 
 typedef struct		s_heap

@@ -105,7 +105,7 @@ void show_alloc_mem_ex(void *ptr, int deb)
         }
         if (d == 16){
             ft_putchar('\n');
-            write_address((unsigned long)p+i);
+            write_address((unsigned long)p+i+1);
             ft_putchar('\t');
             d = 0;
         }
@@ -121,6 +121,15 @@ void    show_alloc_mem(){
     ft_putchar('\n');
     ft_putstr("System Pagesize: ");
     ft_putnbr(heap->pagesize);
+    ft_putchar('\n');
+    ft_putstr("Zones:\n");
+    ft_putstr("Tiny: 1 to ");
+    ft_putnbr(heap->TINY_LIMIT);
+    ft_putchar('\n');
+    ft_putstr("Small: ");
+    ft_putnbr(heap->TINY_LIMIT);
+    ft_putstr(" to ");
+    ft_putnbr(heap->SMALL_LIMIT);
     ft_putchar('\n');
     ft_putchar('\n');
     ft_putstr("N\tZONE\tPTR\t\tSIZE\tISFREE\tPREV\t\tNEXT\n");
@@ -157,7 +166,7 @@ void    init_heap()
 {
     heap = mmap(0, sizeof(t_heap), PROT, MAP,0, 0);
     heap->pagesize = getpagesize();
-    heap->TINY_LIMIT = heap->pagesize/2;
+    heap->TINY_LIMIT = heap->pagesize/10;
     heap->SMALL_LIMIT = heap->pagesize;
 
     heap->tiny = add_chunk(heap->pagesize * TINY_FACTOR);

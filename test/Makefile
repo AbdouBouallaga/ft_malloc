@@ -7,12 +7,12 @@ MALLOC_LIB = ../libft_malloc.so
 
 
 all: $(OBJ)
-	gcc $(CFLAGS) $(OBJ) $(MALLOC_LIB) ../libft/libft.a -o ../$(NAME)
+	@gcc $(CFLAGS) $(OBJ) $(MALLOC_LIB) ../libft/libft.a -o ../$(NAME)
 
 clean:
-	-rm $(OBJ)
+	@-rm $(OBJ)
 
 fclean: clean
-	-rm ../$(NAME)
+	@-rm ../$(NAME)
 
-re: fclean allgit
+re: fclean all
