@@ -1,0 +1,22 @@
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include "malloc.h"
+
+void print(char *s)
+{
+    write(1, s, strlen(s));
+}
+
+int main()
+{
+    char *addr;
+
+    addr = malloc(16);
+    // show_alloc_mem();
+    // show_alloc_mem_ex(addr, 1);
+    free(NULL);
+    free((void *)addr + 5);
+    if (realloc((void *)addr + 5, 10) == NULL)
+        print("Bonjour\n");
+}

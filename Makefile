@@ -1,6 +1,6 @@
 SRC_DIR	= ./src/
 INC_DIR	= ./inc/
-LIB_DIR = ./lib/
+# LIB_DIR = $(CURDIR)/lib/
 SRC	= $(SRC_DIR)malloc.c
 OBJ	= $(SRC:.c=.o)
 LFT = ./libft/libft.a
@@ -10,11 +10,10 @@ ifeq ($(HOSTTYPE),)
 	HOSTTYPE := $(shell uname -m)_$(shell uname -s)
 endif
 
-NAME = $(LIB_DIR)libft_malloc_$(HOSTTYPE).so
+NAME = $(CURDIR)/lib/libft_malloc_$(HOSTTYPE).so
 LINK = libft_malloc.so
 
 CC = rm $(NAME) 2>/dev/null | cc
-
 
 all: $(OBJ) $(NAME) $(LINK)
 
@@ -22,7 +21,7 @@ $(NAME): $(LFT)
 	gcc -o $(NAME) $(OBJ) $(LFT) $(CFLAGS) -shared
 
 $(LINK):
-	-ln $(NAME) $(LINK)
+	-ln -s $(NAME) $(LINK)
 
 $(LFT):
 	make -C ./libft
