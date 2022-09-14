@@ -12,12 +12,13 @@ void print(char *s)
 int main()
 { char *addr1; char *addr3;
 
-    addr1 = (char*)malloc(2*M);
-    show_alloc_mem();
+    addr1 = (char*)malloc(16*M);
+    // show_alloc_mem();
     strcpy(addr1, "Bonjour\n");
     print(addr1);
-    addr3 = (char*)realloc(addr1, 2*M);
+    addr3 = (char*)realloc(addr1, 128*M);
+    // show_alloc_mem();
     addr3[127*M] = 42;
-    // print(addr3);
+    print(addr3);
     return (0);
 }

@@ -16,7 +16,6 @@
 
 typedef struct		s_heap
 {
-	void			*head;
 	void			*tiny;
 	void			*small;
 	void			*large;

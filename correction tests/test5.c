@@ -13,8 +13,6 @@ int main()
     char *addr;
 
     addr = malloc(16);
-    // show_alloc_mem();
-    // show_alloc_mem_ex(addr, 1);
     free(NULL);
     free((void *)addr + 5);
     if (realloc((void *)addr + 5, 10) == NULL)

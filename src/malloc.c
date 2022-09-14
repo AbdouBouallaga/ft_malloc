@@ -237,12 +237,38 @@ void            *malloc(size_t size)
 	return(ret);
 }
 
+int    ptr_alloc_check(void *ptr){
+    void *actu = heap->tiny;
+    t_metadata *meta = NULL;
+    while(actu){
+        if ((long)actu == (long)ptr)
+            return(1);
+        meta = actu - sizeof(t_metadata);
+        actu = meta->next;
+    }
+    actu = heap->small;
+    while(actu){
+        if ((long)actu == (long)ptr)
+            return(1);
+        meta = actu - sizeof(t_metadata);
+        actu = meta->next;
+    }
+    actu = heap->large;
+    while(actu){
+        if ((long)actu == (long)ptr)
+            return(1);
+        meta = actu - sizeof(t_metadata);
+        actu = meta->next;
+    }
+    return (0);
+}
+
 void free(void *ptr)
 {
-    pthread_mutex_lock(&mutex);
-    if (ptr == NULL){
+    if (ptr == NULL || !ptr_alloc_check(ptr)){
         return;
     }
+    pthread_mutex_lock(&mutex);
     int     accum = 0;
     void    *current = ptr;
     void    *save_max;
@@ -309,9 +335,16 @@ void free(void *ptr)
 }
 
 void    *realloc(void *ptr, size_t size){
+
+    if (ptr == NULL || !ptr_alloc_check(ptr)){
+        return NULL;
+    }
     void *ret = NULL;
     pthread_mutex_lock(&mutex);
     t_metadata *meta = ptr - sizeof(t_metadata);
+    if (meta->next == NULL){
+        goto just_allocate;
+    }
     t_metadata *nextmeta = meta->next - sizeof(t_metadata);
     if (nextmeta->isFree && (meta->size - sizeof(t_metadata)) + (nextmeta->size) == size){ // if realloc will use exacly all the next free chunk
         meta->size += nextmeta->size;
@@ -335,6 +368,7 @@ void    *realloc(void *ptr, size_t size){
         ret = nextmeta->prev;
     }
     else{
+        just_allocate:
         ret = malloc(size);
         size_t i = -1;
         size_t len = meta->size - sizeof(t_metadata);
