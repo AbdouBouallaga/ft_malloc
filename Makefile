@@ -1,6 +1,6 @@
 SRC_DIR	= ./src/
 INC_DIR	= ./inc/
-# LIB_DIR = $(CURDIR)/lib/
+LIB_DIR = $(CURDIR)/lib/
 SRC	= $(SRC_DIR)malloc.c
 OBJ	= $(SRC:.c=.o)
 LFT = ./libft/libft.a
@@ -18,6 +18,7 @@ CC = rm $(NAME) 2>/dev/null | cc
 all: $(OBJ) $(NAME) $(LINK)
 
 $(NAME): $(LFT)
+	mkdir -p $(LIB_DIR)
 	gcc -o $(NAME) $(OBJ) $(LFT) $(CFLAGS) -shared
 
 $(LINK):
@@ -33,10 +34,5 @@ fclean: clean
 	-rm $(NAME)
 	-rm $(LINK)
 	make -C ./libft fclean
-	make -C ./test fclean
 
 re: fclean all
-
-tst: all
-	make -C ./test re
-	./malloc_test
