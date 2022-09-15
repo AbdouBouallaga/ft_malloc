@@ -1,13 +1,16 @@
-FTMALLOC = ../libft_malloc.so
+MAL_DIR = ../
+MAL_LIB = $(MAL_DIR)libft_malloc.so
+MAL_HEADER = $(MAL_DIR)inc
+
 
 all:
-	@gcc test0.c $(FTMALLOC) -I ../inc -o t0
-	@gcc test1.c $(FTMALLOC) -I ../inc -o t1
-	@gcc test2.c $(FTMALLOC) -I ../inc -o t2
-	@gcc test3.c $(FTMALLOC) -I ../inc -o t3
-	@gcc test4.c $(FTMALLOC) -I ../inc -o t4
-	@gcc test5.c $(FTMALLOC) -I ../inc -o t5
-	@gcc test6.c $(FTMALLOC) -I ../inc/ -o t6
+	@gcc test0.c $(MAL_LIB) -I $(MAL_HEADER) -o t0
+	@gcc test1.c $(MAL_LIB) -I $(MAL_HEADER) -o t1
+	@gcc test2.c $(MAL_LIB) -I $(MAL_HEADER) -o t2
+	@gcc test3.c $(MAL_LIB) -I $(MAL_HEADER) -o t3
+	@gcc test4.c $(MAL_LIB) -I $(MAL_HEADER) -o t4
+	@gcc test5.c $(MAL_LIB) -I $(MAL_HEADER) -o t5
+	@gcc test6.c $(MAL_LIB) -I $(MAL_HEADER) -o t6
 
 clean:
 	rm t0
