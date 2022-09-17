@@ -19,10 +19,14 @@ all: $(OBJ) $(NAME) $(LINK)
 
 $(NAME): $(LFT)
 	mkdir -p $(LIB_DIR)
-	gcc -o $(NAME) $(OBJ) $(LFT) $(CFLAGS) -shared
+	clang -dynamiclib -std=gnu99 $(OBJ) $(LFT) -current_version 1.0 -compatibility_version 1.0 -fvisibility=hidden -o $(NAME)
+	
 
 $(LINK):
 	-ln -s $(NAME) $(LINK)
+	-security import cert/malloc.cer -k ~/Library/Keychains/login.keychain-db
+	codesign --sign malloc libft_malloc.so
+	codesign -vvvv libft_malloc.so
 
 $(LFT):
 	make -C ./libft

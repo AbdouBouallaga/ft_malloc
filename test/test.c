@@ -1,5 +1,7 @@
 
-#include "test.h"
+#include <stdio.h>
+#include <string.h>
+#include "malloc.h"
 
 int main(){
     char *str1 = (char *)malloc(sizeof(char)*170);

@@ -3,11 +3,13 @@ SRC = test.c
 OBJ	= $(SRC:.c=.o)
 # CFLAGS	=-Wall -Wextra -Werror
 CFLAGS	=
-MALLOC_LIB = ../libft_malloc.so
+MAL_DIR = ~/Desktop/42/mal/
+MAL_LIB = $(MAL_DIR)libft_malloc.so
+MAL_HEADER = $(MAL_DIR)inc
 
 
-all: $(OBJ)
-	@gcc $(CFLAGS) $(OBJ) $(MALLOC_LIB) ../libft/libft.a -o $(NAME)
+all:
+	@gcc $(SRC) $(MAL_LIB) -I $(MAL_HEADER) -o $(NAME)
 	./malloc_test
 
 clean:

@@ -17,12 +17,10 @@ SRC = ft_putchar.c \
 BNR = ft_putchar.o \
 	  ft_putnbr.o \
 	  ft_putstr.o 
-INC = libft.h
-
+CFLAGS = -Wall -Werror -Wextra
 all: $(NAME)
 
 $(NAME): $(BNR)
-	@gcc -Wall -Werror -Wextra -c $(SRC) -I $(INC)
 	@ar rc  $(NAME) $(BNR)
 
 clean:
