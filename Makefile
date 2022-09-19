@@ -15,9 +15,13 @@ CC = rm $(NAME) 2>/dev/null | cc
 
 ifeq ($(KERNEL),Darwin)
 	COMP = clang -dynamiclib -std=gnu99 $(OBJ) $(LFT) -current_version 1.0 -compatibility_version 1.0 -fvisibility=hidden -o $(NAME)
+	SIG = -security import cert/malloc.cer -k ~/Library/Keychains/login.keychain-db ;\
+	codesign --sign malloc libft_malloc.so ;\
+	codesign -vvvv libft_malloc.so
 endif
 ifeq ($(KERNEL),Linux)
 	COMP = gcc -o $(NAME) $(OBJ) $(LFT) $(CFLAGS) -shared
+	SIG = 
 endif
 
 all: $(OBJ) $(NAME) $(LINK)
@@ -25,13 +29,10 @@ all: $(OBJ) $(NAME) $(LINK)
 $(NAME): $(LFT)
 	mkdir -p $(LIB_DIR)
 	$(COMP)
-	
 
 $(LINK):
 	-ln -s $(NAME) $(LINK)
-	-security import cert/malloc.cer -k ~/Library/Keychains/login.keychain-db
-	codesign --sign malloc libft_malloc.so
-	codesign -vvvv libft_malloc.so
+	$(SIG)
 
 $(LFT):
 	make -C ./libft
