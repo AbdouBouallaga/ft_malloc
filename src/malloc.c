@@ -61,6 +61,8 @@ void    write_info(void *page, char *type)
         ft_putchar('\t');
         ft_putnbr(meta->size-sizeof(t_metadata));
         ft_putchar('\t');
+        ft_putnbr(meta->size);
+        ft_putchar('\t');
         ft_putnbr(meta->isFree);
         ft_putchar('\t');
         write_address((unsigned long long)meta->prev);
@@ -132,7 +134,7 @@ void    show_alloc_mem(){
     ft_putnbr(heap->SMALL_LIMIT);
     ft_putchar('\n');
     ft_putchar('\n');
-    ft_putstr("N\tZONE\tPTR\t\tSIZE\tISFREE\tPREV\t\tNEXT\n");
+    ft_putstr("N\tZONE\tPTR\t\tSIZE\tREAL_SIZE\tISFREE\tPREV\t\tNEXT\n");
     write_info(heap->tiny, "tiny");
     ft_putchar('\n');
     write_info(heap->small, "small");
@@ -147,7 +149,7 @@ void    *add_chunk(size_t size)
     void        *ptr = NULL;
     t_metadata  *meta;
 
-    meta = mmap(0, size+sizeof(t_metadata), PROT, MAP,0, 0);
+    meta = mmap(0, size+sizeof(t_metadata), PROT, MAP,-1, 0);
     if (meta != NULL){
 	    meta->size = size;
 	    meta->isFree = 1;
@@ -162,31 +164,39 @@ void    *add_chunk(size_t size)
     }
 }
 
-void    init_heap()
+int    init_heap()
 {
-    heap = mmap(0, sizeof(t_heap), PROT, MAP,0, 0);
-    heap->pagesize = getpagesize();
-    // heap->TINY_LIMIT = heap->pagesize/10;
-    // heap->SMALL_LIMIT = heap->pagesize;
-    heap->TINY_LIMIT = 0;
-    heap->SMALL_LIMIT = 0;
+    heap = mmap(0, sizeof(t_heap), PROT, MAP,-1, 0);
+    if (heap != NULL){
+        heap->pagesize = getpagesize();
+        heap->TINY_LIMIT = heap->pagesize/10;
+        heap->SMALL_LIMIT = heap->pagesize;
 
-    heap->tiny = add_chunk(heap->pagesize * TINY_FACTOR);
-    heap->small = add_chunk(heap->pagesize * SMALL_FACTOR);
-    heap->large = NULL;
+        // heap->tiny = add_chunk(heap->pagesize * TINY_FACTOR);
+        // heap->small = add_chunk(heap->pagesize * SMALL_FACTOR);
+        heap->tiny = NULL;
+        heap->small = NULL;
+        heap->large = NULL;
+        return(1);
+    }
+    else
+        return(0);
 }
 
-void            *allocate_in_zone(void *current, size_t size,size_t zonefactor)
+void            *allocate_in_zone(void **cur, size_t size,size_t zonefactor)
 {
     void            *new;
     void            *temp;
     t_metadata      *meta;
     t_metadata      *nextMeta;
-    unsigned int    meta_size = sizeof(t_metadata);
-    if (current == NULL){
-        heap->large = add_chunk(heap->pagesize * zonefactor);
-        current = heap->large;
+    int    meta_size = sizeof(t_metadata);
+    
+    if (*cur == NULL){
+        ft_putstr("nill\n");
+        *cur = add_chunk(heap->pagesize * zonefactor);
     }
+    void *current = *cur;
+    ft_putstr("lol");
     while (current) // search for free space and return a ptr.
     {
         meta = current-meta_size;
@@ -225,17 +235,16 @@ void            *malloc(size_t size)
 	ft_putstr("malloc ");
 	ft_putnbr((int)size);
 	ft_putchar('\n');
-    size = size*2;
     pthread_mutex_lock(&mutex);
 	if (!heap)
         init_heap();
     if (size){
         if (size <= heap->TINY_LIMIT)
-            ret = allocate_in_zone(heap->tiny, size, TINY_FACTOR);
+            ret = allocate_in_zone(&heap->tiny, size, TINY_FACTOR);
         else if (size <= heap->SMALL_LIMIT)
-            ret = allocate_in_zone(heap->small, size, SMALL_FACTOR);
+            ret = allocate_in_zone(&heap->small, size, SMALL_FACTOR);
         else{
-            ret = allocate_in_zone(heap->largeEnd, size, (size/heap->pagesize)+1);
+            ret = allocate_in_zone(&heap->large, size, (size/heap->pagesize)+1);
             heap->largeEnd = ret; // since large zone use mmap everytime, the search for free space start from the last chunk,'no free space -> allocate using mmap'
         }
     }
@@ -394,4 +403,3 @@ void    *realloc(void *ptr, size_t size){
     pthread_mutex_unlock(&mutex);
     return(ret);
 }
-
