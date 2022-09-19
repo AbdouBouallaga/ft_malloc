@@ -8,10 +8,10 @@
 
 
 #define PROT    PROT_READ|PROT_WRITE
-#define MAP     MAP_SHARED|MAP_ANONYMOUS
+#define MAP     MAP_PRIVATE|MAP_ANONYMOUS
 
-#define TINY_FACTOR     5
-#define SMALL_FACTOR	5
+#define TINY_FACTOR     1
+#define SMALL_FACTOR	1
 
 
 typedef struct		s_heap

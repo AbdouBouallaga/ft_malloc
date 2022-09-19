@@ -166,8 +166,10 @@ void    init_heap()
 {
     heap = mmap(0, sizeof(t_heap), PROT, MAP,0, 0);
     heap->pagesize = getpagesize();
-    heap->TINY_LIMIT = heap->pagesize/10;
-    heap->SMALL_LIMIT = heap->pagesize;
+    // heap->TINY_LIMIT = heap->pagesize/10;
+    // heap->SMALL_LIMIT = heap->pagesize;
+    heap->TINY_LIMIT = 0;
+    heap->SMALL_LIMIT = 0;
 
     heap->tiny = add_chunk(heap->pagesize * TINY_FACTOR);
     heap->small = add_chunk(heap->pagesize * SMALL_FACTOR);
@@ -219,8 +221,11 @@ void            *allocate_in_zone(void *current, size_t size,size_t zonefactor)
 
 void            *malloc(size_t size)
 {
-	void        *ret = NULL;
-	ft_putchar('p');
+	unsigned long long        *ret = NULL;
+	ft_putstr("malloc ");
+	ft_putnbr((int)size);
+	ft_putchar('\n');
+    size = size*2;
     pthread_mutex_lock(&mutex);
 	if (!heap)
         init_heap();
@@ -235,6 +240,8 @@ void            *malloc(size_t size)
         }
     }
     pthread_mutex_unlock(&mutex);
+    // show_alloc_mem();
+    // show_alloc_mem_ex(ret, 1);
 	return(ret);
 }
 
@@ -269,6 +276,8 @@ void free(void *ptr)
     if (ptr == NULL || !ptr_alloc_check(ptr)){
         return;
     }
+    ft_putstr("free ");
+	ft_putchar('\n');
     pthread_mutex_lock(&mutex);
     int     accum = 0;
     void    *current = ptr;
@@ -341,6 +350,8 @@ void    *realloc(void *ptr, size_t size){
         return NULL;
     }
     void *ret = NULL;
+    ft_putstr("realloc");
+	ft_putchar('\n');
     pthread_mutex_lock(&mutex);
     t_metadata *meta = ptr - sizeof(t_metadata);
     if (meta->next == NULL){
