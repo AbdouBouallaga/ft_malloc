@@ -220,6 +220,7 @@ void            *allocate_in_zone(void *current, size_t size,size_t zonefactor)
 void            *malloc(size_t size)
 {
 	void        *ret = NULL;
+	ft_putchar('p');
     pthread_mutex_lock(&mutex);
 	if (!heap)
         init_heap();
