@@ -203,7 +203,13 @@ void            *allocate_in_zone(void **cur, size_t size,size_t zonefactor)
     while (current) // search for free space and return a ptr.
     {
         meta = current-meta_size;
-        if(meta->isFree && size < meta->size - meta_size){
+        // ft_putstr("ALLOC DEBUG SIZE ");
+	    // ft_putnbr((int)meta->size);
+	    // ft_putchar(' ');
+	    // ft_putnbr((int)(meta->size - (size + heap->meta_size)));
+	    // ft_putchar('\n');
+        if(meta->isFree && ((int)meta->size - ((int)size + meta_size)) > 0 && size < meta->size - meta_size){
+                // ft_putstr(" >> deb \n");
                 meta->isFree = 0;
             if (size <= heap->SMALL_LIMIT){ 
                 // in preallocated zones, the free space is devided,
@@ -223,9 +229,9 @@ void            *allocate_in_zone(void **cur, size_t size,size_t zonefactor)
             current = meta->next;
         else{ //if there is no free space, add a chunk to the zone using mmap.
             temp = current;
-            ft_putstr("add add ");
-	        ft_putnbr((int)heap->pagesize * zonefactor);
-            ft_putchar('\n');
+            // ft_putstr("add add ");
+	        // ft_putnbr((int)heap->pagesize * zonefactor);
+            // ft_putchar('\n');
             meta->next = add_chunk(heap->pagesize * zonefactor);
             current = meta->next;
             nextMeta = current-meta_size;
@@ -245,13 +251,14 @@ void            *malloc(size_t size)
     // return(mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0));
 	if (!heap)
         init_heap();
+    size += heap->meta_size;
     if (size){
-        if (size+heap->meta_size <= heap->TINY_LIMIT)
+        if (size <= heap->TINY_LIMIT)
             ret = allocate_in_zone(&heap->tiny, size, TINY_FACTOR);
-        else if (size+heap->meta_size <= heap->SMALL_LIMIT)
+        else if (size <= heap->SMALL_LIMIT-10)
             ret = allocate_in_zone(&heap->small, size, SMALL_FACTOR);
         else{
-            ret = allocate_in_zone(&heap->large, size, ((size+heap->meta_size)/heap->pagesize)+1);
+            ret = allocate_in_zone(&heap->large, size, ((size + heap->meta_size)/heap->pagesize)+1);
             heap->largeEnd = ret; // since large zone use mmap everytime, the search for free space start from the last chunk,'no free space -> allocate using mmap'
         }
     }
@@ -289,6 +296,16 @@ int    ptr_alloc_check(void *ptr){
         actu = meta->next;
     }
     return (0);
+}
+
+void *calloc(size_t nitems, size_t size){
+    void    *ret;
+    void    *temp;
+    int     i = -1;
+    ret = 
+    while (++i < nitems){
+
+    }
 }
 
 void free(void *ptr)

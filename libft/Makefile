@@ -13,10 +13,12 @@
 NAME = libft.a
 SRC = ft_putchar.c \
 	  ft_putnbr.c \
-	  ft_putstr.c 
+	  ft_putstr.c \
+	  ft_memset.c
 BNR = ft_putchar.o \
 	  ft_putnbr.o \
-	  ft_putstr.o 
+	  ft_putstr.o \
+	  ft_memset.o
 CFLAGS = -Wall -Werror -Wextra
 all: $(NAME)
 

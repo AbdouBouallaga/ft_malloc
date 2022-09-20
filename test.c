@@ -9,8 +9,8 @@ int main(){
     int i = -1;
     char fill = 'A';
     int j;
-    size_t size = 4030;
-    while(++i < 1000)
+    size_t size = 4060;
+    while(++i < 100)
     {
         j = -1;
         malloc(size);
