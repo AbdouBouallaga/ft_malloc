@@ -1,19 +1,23 @@
 
 #include <strings.h>
 #include <stdlib.h>
+#include "./libft/libft.h"
 
 
 int main(){
-    char *val[1000];
+    char *val[10000];
     int i = -1;
     char fill = 'A';
     int j;
-    size_t size = 5;
-    while(++i < 100000)
+    size_t size = 4030;
+    while(++i < 1000)
     {
         j = -1;
-        val[i] = malloc(size);
+        malloc(size);
+        ft_putnbr(i);
+        ft_putchar('\n');
         show_alloc_mem();
+        size += 1;
         // while (++j < size)
         //     val[i][j] = fill;
         // val[i][j] = '\0';

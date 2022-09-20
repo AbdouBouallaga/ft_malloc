@@ -7,8 +7,8 @@
 #include "../libft/libft.h"
 
 
-#define PROT    PROT_READ|PROT_WRITE
-#define MAP     MAP_PRIVATE|MAP_ANONYMOUS
+#define PROT    PROT_READ | PROT_WRITE
+#define MAP     MAP_PRIVATE | MAP_ANONYMOUS
 
 #define TINY_FACTOR     1
 #define SMALL_FACTOR	1
@@ -21,6 +21,7 @@ typedef struct		s_heap
 	void			*large;
 	void			*largeEnd;
 	int				pagesize;
+	int				meta_size;
 	size_t			TINY_LIMIT;
 	size_t			SMALL_LIMIT;
 
