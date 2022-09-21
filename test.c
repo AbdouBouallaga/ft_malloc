@@ -6,30 +6,31 @@
 
 
 int main(){
-    int len = 1;
+    int len = 10;
     char *val[len];
     int i = -1;
     char fill = 'A';
     int j;
-    size_t size = 520;
+    size_t size = 32768;
     t_metadata *meta;
     while(++i < len)
     {
         j = -1;
         val[i] = malloc(size);
-        ft_putnbr(i);
-        ft_putchar('\n');
-        show_alloc_mem();
+        // ft_putnbr(i);
+        // ft_putchar('\n');
+        // show_alloc_mem();
         while (++j < size-1)
             val[i][j] = fill;
         val[i][j] = 0xff;
-        meta = val[i] - sizeof(t_metadata);
-        ft_putchar(meta->safe_one);
-        ft_putchar(meta->safe_two);
-        ft_putchar(meta->safe_three);
+        size+=1;
+        // meta = val[i] - sizeof(t_metadata);
+        // ft_putchar(meta->safe_one);
+        // ft_putchar(meta->safe_two);
+        // ft_putchar(meta->safe_three);
         // meta->isFree<<=8;
         // show_alloc_mem_ex(val[i], 1);
-        show_alloc_mem();
+        // show_alloc_mem();
 
         // if (i == 8){
         //     show_alloc_mem_ex(val[i-2], 1);
@@ -37,11 +38,14 @@ int main(){
         //     show_alloc_mem_ex(val[i], 1);
         // }
     }
-    show_alloc_mem_ex(val[i-1], 1);
     show_alloc_mem();
-    realloc(val[i-1], 768);
+    while (i >= 0)
+    {
+        free(val[i]);
+        i--;
+    }
+    show_alloc_mem();
     // show_alloc_mem_ex(val[1], 1);
-    show_alloc_mem();
     // free(val[1]);
     // i = -1;
     // while (++i < 1001){

@@ -13,7 +13,7 @@
 
 
 #define TINY_FACTOR     1
-#define SMALL_FACTOR	1
+#define SMALL_FACTOR	16
 
 
 typedef struct		s_heap
