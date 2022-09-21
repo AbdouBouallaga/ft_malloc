@@ -1,6 +1,7 @@
 #ifndef MALLOC_H
 #define MALLOC_H
 
+
 #include <sys/mman.h>
 #include <pthread.h>
 #include <unistd.h>
@@ -9,6 +10,7 @@
 
 #define PROT    PROT_READ | PROT_WRITE
 #define MAP     MAP_PRIVATE | MAP_ANONYMOUS
+
 
 #define TINY_FACTOR     1
 #define SMALL_FACTOR	1
@@ -24,14 +26,18 @@ typedef struct		s_heap
 	int				meta_size;
 	size_t			TINY_LIMIT;
 	size_t			SMALL_LIMIT;
-
+	void			*safe; //a backup of meta_datas
+	int				safe_count;
 }					t_heap;
 
 
 typedef struct		s_metadata
 {
-	size_t			size;
-	size_t			isFree;
+	char			safe_one;
+	char			safe_two;
+	char			safe_three;
+	char			isFree;
+	int				size;
 	void			*prev;
 	void			*next;
 }					t_metadata;

@@ -2,36 +2,49 @@
 #include <strings.h>
 #include <stdlib.h>
 #include "./libft/libft.h"
+#include "./inc/malloc.h"
 
 
 int main(){
-    char *val[10000];
+    int len = 2;
+    char *val[len];
     int i = -1;
     char fill = 'A';
     int j;
-    size_t size = 4060;
-    while(++i < 100)
+    size_t size = 49;
+    t_metadata *meta;
+    while(++i < len)
     {
         j = -1;
-        malloc(size);
+        val[i] = malloc(size);
         ft_putnbr(i);
         ft_putchar('\n');
         show_alloc_mem();
-        size += 1;
-        // while (++j < size)
-        //     val[i][j] = fill;
-        // val[i][j] = '\0';
+        while (++j < size+200)
+            val[i][j] = fill;
+        val[i][j] = '\0';
+        meta = val[i] - sizeof(t_metadata);
+        ft_putchar(meta->safe_one);
+        ft_putchar(meta->safe_two);
+        ft_putchar(meta->safe_three);
+        // meta->isFree<<=8;
+        show_alloc_mem_ex(val[i], 1);
+        show_alloc_mem();
+
         // if (i == 8){
         //     show_alloc_mem_ex(val[i-2], 1);
         //     show_alloc_mem_ex(val[i-1], 1);
         //     show_alloc_mem_ex(val[i], 1);
         // }
     }
+    show_alloc_mem_ex(val[1], 1);
+    show_alloc_mem();
+    free(val[1]);
     // i = -1;
     // while (++i < 1001){
     //     printf("%c")
     // }
-    show_alloc_mem();
+    // show_alloc_mem();
     return(0);
 }
 
