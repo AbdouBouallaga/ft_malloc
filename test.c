@@ -6,12 +6,12 @@
 
 
 int main(){
-    int len = 2;
+    int len = 1;
     char *val[len];
     int i = -1;
     char fill = 'A';
     int j;
-    size_t size = 49;
+    size_t size = 520;
     t_metadata *meta;
     while(++i < len)
     {
@@ -20,15 +20,15 @@ int main(){
         ft_putnbr(i);
         ft_putchar('\n');
         show_alloc_mem();
-        while (++j < size+200)
+        while (++j < size-1)
             val[i][j] = fill;
-        val[i][j] = '\0';
+        val[i][j] = 0xff;
         meta = val[i] - sizeof(t_metadata);
         ft_putchar(meta->safe_one);
         ft_putchar(meta->safe_two);
         ft_putchar(meta->safe_three);
         // meta->isFree<<=8;
-        show_alloc_mem_ex(val[i], 1);
+        // show_alloc_mem_ex(val[i], 1);
         show_alloc_mem();
 
         // if (i == 8){
@@ -37,9 +37,12 @@ int main(){
         //     show_alloc_mem_ex(val[i], 1);
         // }
     }
-    show_alloc_mem_ex(val[1], 1);
+    show_alloc_mem_ex(val[i-1], 1);
     show_alloc_mem();
-    free(val[1]);
+    realloc(val[i-1], 768);
+    // show_alloc_mem_ex(val[1], 1);
+    show_alloc_mem();
+    // free(val[1]);
     // i = -1;
     // while (++i < 1001){
     //     printf("%c")
