@@ -37,7 +37,7 @@ typedef struct		s_metadata
 	char			safe_two;
 	char			safe_three;
 	char			isFree;
-	int				size;
+	size_t			size;
 	void			*prev;
 	void			*next;
 }					t_metadata;

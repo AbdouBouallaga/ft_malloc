@@ -12,10 +12,12 @@ void    add_safe(t_metadata *ptr)
     ptr->safe_one = 0x2f;
     ptr->safe_two = 0x40;
     ptr->safe_three = 0x5c;
+
 }
 
 int     check_safe(t_metadata *ptr)
 {
+
     if (ptr->safe_one == '/' && ptr->safe_two == '@' && ptr->safe_three == '\\'){
         return(1);
     }
@@ -175,7 +177,7 @@ void    *add_chunk(size_t size)
     void        *ptr = NULL;
     t_metadata  *meta;
     // ft_putstr("ADD CHUNK");
-    meta = mmap(0, size+heap->meta_size, PROT, MAP,0, 0);
+    meta = mmap(0, size, PROT, MAP,0, 0);
     if (meta != NULL){
 	    meta->size = size;
 	    meta->isFree = 'Y';
@@ -218,31 +220,39 @@ void            *allocate_in_zone(void **cur, size_t size,size_t zonefactor)
     void            *temp;
     t_metadata      *meta;
     t_metadata      *nextMeta;
-    int    meta_size = heap->meta_size;
+    size_t    meta_size = heap->meta_size;
     
     if (*cur == NULL){
-        ft_putstr("nill\n");
         *cur = add_chunk(heap->pagesize * zonefactor);
     }
     void *current = *cur;
     // ft_putstr("lol");
     while (current) // search for free space and return a ptr.
     {
+        // alloc_add_next:
         meta = current-meta_size;
-        ft_putstr("ALLOC DEBUG SIZE ");
-	    ft_putnbr((int)meta->size);
-	    ft_putchar('\n');
-        if(meta->isFree == 'Y' && ((int)meta->size - ((int)size + meta_size)) > 0 && (int)size < meta->size - meta_size){
-                // ft_putstr(" >> deb \n");
+
+        // if (!check_safe(meta)){
+        //         write_address((unsigned long)current + meta_size);
+        //         ft_putstr(" >> OUUUPS \n");
+        //     if (meta->next){
+        //         current = meta->next;
+        //         goto alloc_add_next;
+        //     }
+        //     else
+        //         goto alloc_add_chunk;
+        // }
+        // if ()
+        if(meta->isFree == 'Y' && (meta->size - (size + meta_size)) >= 0 && size <= meta->size - meta_size){
                 meta->isFree = 'N';
-            if (size + meta_size <= heap->SMALL_LIMIT){ 
+            if (size + meta_size <= heap->SMALL_LIMIT && (meta->size - (size + meta_size)) >= (size_t)heap->meta_size){ 
                 // in preallocated zones, the free space is devided,
                 // take the size you need and define the rest as free space.
-                new = current+size+meta_size;
-                nextMeta = new-meta_size;
+                new = current + size + meta_size;
+                nextMeta = new - meta_size;
                 nextMeta->isFree = 'Y';
-                nextMeta->size = meta->size - size - meta_size;
-                meta->size = size+meta_size;
+                nextMeta->size = meta->size - (size + meta_size);
+                meta->size = size + meta_size;
                 meta->next = new;
                 nextMeta->prev = current;
                 nextMeta->next = NULL;
@@ -250,11 +260,11 @@ void            *allocate_in_zone(void **cur, size_t size,size_t zonefactor)
             }
             return(current);
         }
-        if (meta->next)
+        if (meta->next != NULL)
             current = meta->next;
         else{ //if there is no free space, add a chunk to the zone using mmap.
+            // alloc_add_chunk:
             temp = current;
-            ft_putstr("add add ");
 	        // ft_putnbr((int)heap->pagesize * zonefactor);
             // ft_putchar('\n');
             meta->next = add_chunk(heap->pagesize * zonefactor);
@@ -269,13 +279,16 @@ void            *allocate_in_zone(void **cur, size_t size,size_t zonefactor)
 void            *malloc(size_t size)
 {
     pthread_mutex_lock(&mutex);
-	void        *ret = NULL;
+	unsigned long        *ret = NULL;
 	ft_putstr("M ");
 	ft_putnbr((int)size);
 	ft_putchar(' ');
-    // return(mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, 0, 0));
+
 	if (!heap)
         init_heap();
+
+    // ret = allocate_in_zone(&heap->tiny, size, TINY_FACTOR);
+
     if (size){
         if (size + heap->meta_size <= heap->TINY_LIMIT)
             ret = allocate_in_zone(&heap->tiny, size, TINY_FACTOR);
@@ -283,7 +296,9 @@ void            *malloc(size_t size)
             ret = allocate_in_zone(&heap->small, size, SMALL_FACTOR);
         else{
             ret = allocate_in_zone(&heap->large, size, ((size + heap->meta_size)/heap->pagesize)+1);
-            heap->largeEnd = ret; // since large zone use mmap everytime, the search for free space start from the last chunk,'no free space -> allocate using mmap'
+            // if (heap->large == NULL)
+            //     heap->large = ret;
+            // heap->largeEnd = ret; // since large zone use mmap everytime, the search for free space start from the last chunk,'no free space -> allocate using mmap'
         }
     }
     // show_alloc_mem();
@@ -300,6 +315,7 @@ int    ptr_alloc_check(void *ptr){
     void *actu = heap->tiny;
     t_metadata *meta = NULL;
     while(actu){
+	    
         if ((long)actu == (long)ptr)
             return(1);
         meta = actu - heap->meta_size;
@@ -307,6 +323,7 @@ int    ptr_alloc_check(void *ptr){
     }
     actu = heap->small;
     while(actu){
+        
         if ((long)actu == (long)ptr)
             return(1);
         meta = actu - heap->meta_size;
@@ -338,17 +355,17 @@ void free(void *ptr)
     write_address((unsigned long)ptr);
 	ft_putchar('\n');
 
+    size_t     accum = 0;
+    void    *current = ptr;
+    void    *save_max;
+    void    *save_min;
+    int     zone_large;
+    pthread_mutex_lock(&mutex);
     if (ptr == NULL || !ptr_alloc_check(ptr)){
         ft_putstr("out\n");
         return;
     }
 
-    pthread_mutex_lock(&mutex);
-    int     accum = 0;
-    void    *current = ptr;
-    void    *save_max;
-    void    *save_min;
-    int     zone_large;
 
 	t_metadata *meta = ptr - heap->meta_size;
     // if (!check_safe(meta)){
@@ -362,7 +379,7 @@ void free(void *ptr)
 	meta->isFree = 'Y';
     zone_large = ((size_t)meta->size > heap->SMALL_LIMIT) ? 1 : 0;
     if (zone_large){ //large zone
-        ft_putstr("deb \n");
+        // ft_putstr("FREE LARGE \n");
 	    t_metadata *meta_munmap = meta;
         save_min = meta->prev;
         save_max = meta->next;
@@ -380,11 +397,10 @@ void free(void *ptr)
             heap->largeEnd = NULL;
             heap->large = NULL;
         }
-        ft_putnbr(meta_munmap->size);
-        ft_putchar('\n');
         munmap(meta_munmap, meta_munmap->size); // munmap remove pages by pagesize*
     }
     else {
+        // ft_putstr(">>FREE NON LARGE \n");
         save_max = current;
         while (current){ // search for free chunks after ptr to defragment the heap
             meta = current - heap->meta_size;
@@ -431,6 +447,7 @@ void    *realloc(void *ptr, size_t size){
 	ft_putnbr((int)size);
 	ft_putchar('\n');
     // show_alloc_mem();
+    pthread_mutex_lock(&mutex);
     if (size < 1){
         free(ptr);
         return(NULL);
@@ -445,20 +462,19 @@ void    *realloc(void *ptr, size_t size){
     ft_putstr("deb \n\n");
     // show_alloc_mem_ex(ptr, 0);
     void *ret = NULL;
-    pthread_mutex_lock(&mutex);
     t_metadata *meta = ptr - heap->meta_size;
     if (meta->next == NULL){
         goto just_allocate;
     }
     t_metadata *nextmeta = meta->next - heap->meta_size;
-    if (nextmeta->isFree == 'Y' && (meta->size - heap->meta_size) + (nextmeta->size) == (int)size){ // if realloc will use exacly all the next free chunk
+    if (nextmeta->isFree == 'Y' && (meta->size - heap->meta_size) + (nextmeta->size) == size){ // if realloc will use exacly all the next free chunk
         meta->size += nextmeta->size;
         meta->next = nextmeta->next;
         nextmeta = meta->next - heap->meta_size;
         nextmeta->prev = ptr;
         ret = ptr;
     }
-    else if (nextmeta->isFree == 'Y' && (meta->size - heap->meta_size) + (nextmeta->size) > (int)size){ // if realloc will use less than the avalable free space
+    else if (nextmeta->isFree == 'Y' && (meta->size - heap->meta_size) + (nextmeta->size) > size){ // if realloc will use less than the avalable free space
         void *save_next = nextmeta->next;
         size_t save_size = nextmeta->size;
         meta->next = ptr + size + heap->meta_size;

@@ -1,33 +1,54 @@
 
 #include <strings.h>
 #include <stdlib.h>
-#include "./libft/libft.h"
+// #include "./libft/libft.h"
 #include "./inc/malloc.h"
 
+int     check_safe(t_metadata *ptr)
+{
+    if (ptr->safe_one == '/' && ptr->safe_two == '@' && ptr->safe_three == '\\'){
+        return(1);
+    }
+    return(0);
+}
 
 int main(){
-    int len = 10;
-    char *val[len];
-    int i = -1;
+    int len = 1000;
+    char *val[len+1000];
+    int i = 0;
     char fill = 'A';
     int j;
-    size_t size = 32768;
+    int s = 3;
+    size_t size[3] = {60, 500, 9000};
     t_metadata *meta;
+    val[i] = malloc(size[s%3]);
+    j = -1;
+    while (++j < size[s%3]-1)
+            val[i][j] = fill;
+    val[i][j] = 0xff;
     while(++i < len)
     {
         j = -1;
-        val[i] = malloc(size);
+        val[i] = malloc(size[s%3]);
         // ft_putnbr(i);
         // ft_putchar('\n');
         // show_alloc_mem();
-        while (++j < size-1)
+
+        while (++j < size[s%3]-1)
             val[i][j] = fill;
         val[i][j] = 0xff;
-        size+=1;
-        // meta = val[i] - sizeof(t_metadata);
-        // ft_putchar(meta->safe_one);
-        // ft_putchar(meta->safe_two);
-        // ft_putchar(meta->safe_three);
+
+        size[s%3]+=1;
+        meta = val[i] - sizeof(t_metadata);
+        if (!check_safe(meta)){
+            ft_putstr("fucked\n");
+            show_alloc_mem_ex(val[i-1], 1);
+            show_alloc_mem_ex(val[i], 1);
+            return(0);
+        }
+        ft_putchar(meta->safe_one);
+        ft_putchar(meta->safe_two);
+        ft_putchar(meta->safe_three);
         // meta->isFree<<=8;
         // show_alloc_mem_ex(val[i], 1);
         // show_alloc_mem();
@@ -37,6 +58,7 @@ int main(){
         //     show_alloc_mem_ex(val[i-1], 1);
         //     show_alloc_mem_ex(val[i], 1);
         // }
+        s++;
     }
     show_alloc_mem();
     while (i >= 0)
@@ -44,7 +66,20 @@ int main(){
         free(val[i]);
         i--;
     }
+    i-=1;
     show_alloc_mem();
+    // meta = val[i] - sizeof(t_metadata);
+    // show_alloc_mem();
+    // show_alloc_mem_ex(val[i], 1);
+    // show_alloc_mem_ex(val[i], 1);
+    // malloc(90);
+    // show_alloc_mem();
+    // malloc(3850);
+    // show_alloc_mem();
+    // malloc(1);
+    // show_alloc_mem();
+    // show_alloc_mem_ex(val[i], 1);
+
     // show_alloc_mem_ex(val[1], 1);
     // free(val[1]);
     // i = -1;
@@ -65,10 +100,10 @@ int main(){
 // 	void *e5 = malloc(32);
 // 	void *e6 = malloc(32);
 // 	show_alloc_mem();
-    // char *str1 = (char *)malloc(sizeof(char)*170);
-    // char *str2 = (char *)malloc(sizeof(char)*200);
-    // char *str3 = (char *)malloc(sizeof(char)*250);
-    // char *str4 = (char *)malloc(sizeof(char)*168);
+    // char *str1 = (char *)malloc(size[s%3]of(char)*170);
+    // char *str2 = (char *)malloc(size[s%3]of(char)*200);
+    // char *str3 = (char *)malloc(size[s%3]of(char)*250);
+    // char *str4 = (char *)malloc(size[s%3]of(char)*168);
     // ft_putstr("Show heap status\n");
     // show_alloc_mem();
     // ft_putstr("Free the 3th allocation and Show heap status\n");
@@ -93,7 +128,7 @@ int main(){
     // ft_putstr("Show heap status\n");
     // show_alloc_mem();
     // show_alloc_mem_ex(str2, 0);
-    // ft_putstr("realloc 2nd allocation with size 500\n\n");
+    // ft_putstr("realloc 2nd allocation with size[s%3] 500\n\n");
     // str2 = realloc(str2, 500);
     // show_alloc_mem_ex(str2, 0);
     // show_alloc_mem();
