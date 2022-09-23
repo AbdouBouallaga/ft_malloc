@@ -8,26 +8,38 @@
 #include "../libft/libft.h"
 
 
+#include <string.h>
+
+
 #define PROT    PROT_READ | PROT_WRITE
 #define MAP     MAP_PRIVATE | MAP_ANONYMOUS
 
 
 #define TINY_FACTOR     1
-#define SMALL_FACTOR	16
+#define SMALL_FACTOR	1
 
+// typedef struct		s_mmaped
+// {
+// 	void 			*ptr;
+// 	size_t			size;
+// 	void			*prev;
+// 	void			*next;
+// }					t_mmaped;
 
 typedef struct		s_heap
 {
 	void			*tiny;
 	void			*small;
 	void			*large;
+
 	void			*largeEnd;
+
 	int				pagesize;
 	int				meta_size;
 	size_t			TINY_LIMIT;
 	size_t			SMALL_LIMIT;
-	void			*safe; //a backup of meta_datas
-	int				safe_count;
+	// void			*safe; //a backup of meta_datas
+	// int				safe_count;
 }					t_heap;
 
 

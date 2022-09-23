@@ -1,8 +1,8 @@
 #include "../inc/malloc.h"
-
+#include <errno.h>
 /// GLOBAL VARIABLE HEAP
 
-t_heap *heap = NULL;
+t_heap heap;
 pthread_mutex_t mutex; // we only have 1 critical ressource, the heap, so we don't worry about locking hierarchie.
 
 
@@ -18,7 +18,7 @@ void    add_safe(t_metadata *ptr)
 int     check_safe(t_metadata *ptr)
 {
 
-    if (ptr->safe_one == '/' && ptr->safe_two == '@' && ptr->safe_three == '\\'){
+    if (ptr->safe_one == '/' && ptr->safe_two == '@' && (ptr->safe_three == '\\' || ptr->safe_three == '|')){ // safe_three=='|' means its returned by mmap, freeable bu munmap
         return(1);
     }
     return(0);
@@ -73,7 +73,7 @@ void    write_info(void *page, char *type)
     unsigned int c = 1;
     t_metadata *meta;
     while(page){
-        meta = page - heap->meta_size;
+        meta = page - heap.meta_size;
         if (!check_safe(meta)){
             ft_putstr("error \n");
             return;
@@ -82,10 +82,12 @@ void    write_info(void *page, char *type)
         ft_putnbr(c);
         ft_putchar('\t');
         ft_putstr(type);
+        ft_putchar(' ');
+        ft_putchar(meta->safe_three);
         ft_putchar('\t');
         write_address((unsigned long long)page);
         ft_putchar('\t');
-        ft_putnbr(meta->size-heap->meta_size);
+        ft_putnbr(meta->size-heap.meta_size);
         ft_putchar('\t');
         ft_putchar('\t');
         ft_putnbr(meta->size);
@@ -108,17 +110,17 @@ void show_alloc_mem_ex(void *ptr, int deb)
     write_address((unsigned long)ptr);
 
     unsigned char *p = ptr;
-    t_metadata *meta = ptr - heap->meta_size;
+    t_metadata *meta = ptr - heap.meta_size;
     int i = -1;
     int size;
     if (deb){
         ft_putstr(" including metadata\n\n");
         size = meta->size;
-        p = ptr - heap->meta_size;
+        p = ptr - heap.meta_size;
     }
     else {
         ft_putstr(" content only\n\n");
-        size = meta->size - heap->meta_size;
+        size = meta->size - heap.meta_size;
     }
     int c = 0;
     int d = 0;
@@ -147,27 +149,27 @@ void show_alloc_mem_ex(void *ptr, int deb)
 void    show_alloc_mem(){
     ft_putchar('\n');
     ft_putstr("Sizeof Metadata: ");
-    ft_putnbr(heap->meta_size);
+    ft_putnbr(heap.meta_size);
     ft_putchar('\n');
     ft_putstr("System Pagesize: ");
-    ft_putnbr(heap->pagesize);
+    ft_putnbr(heap.pagesize);
     ft_putchar('\n');
     ft_putstr("Zones:\n");
     ft_putstr("Tiny: 1 to ");
-    ft_putnbr(heap->TINY_LIMIT);
+    ft_putnbr(heap.TINY_LIMIT-heap.meta_size);
     ft_putchar('\n');
     ft_putstr("Small: ");
-    ft_putnbr(heap->TINY_LIMIT);
+    ft_putnbr(heap.TINY_LIMIT-heap.meta_size+1);
     ft_putstr(" to ");
-    ft_putnbr(heap->SMALL_LIMIT);
+    ft_putnbr(heap.SMALL_LIMIT-heap.meta_size);
     ft_putchar('\n');
     ft_putchar('\n');
     ft_putstr("N\tZONE\tPTR\t\tSIZE\t\tREAL_SIZE\tISFREE\tPREV\t\tNEXT\n");
-    write_info(heap->tiny, "tiny");
+    write_info(heap.tiny, "tiny");
     ft_putchar('\n');
-    write_info(heap->small, "small");
+    write_info(heap.small, "small");
     ft_putchar('\n');
-    write_info(heap->large, "large");
+    write_info(heap.large, "large");
     ft_putchar('\n');
     return;
 }
@@ -178,14 +180,18 @@ void    *add_chunk(size_t size)
     t_metadata  *meta;
     // ft_putstr("ADD CHUNK");
     meta = mmap(0, size, PROT, MAP,0, 0);
-    if (meta != NULL){
+    if (meta != (void *)-1){
+        // if (heap.mmaped->ptr == NULL){
+
+        // }
 	    meta->size = size;
 	    meta->isFree = 'Y';
         meta->next = NULL;
         meta->prev = NULL;
         add_safe(meta);
+        meta->safe_three = '|';
         void *metaAddr = meta;
-        ptr = metaAddr+heap->meta_size;
+        ptr = metaAddr+heap.meta_size;
         return(ptr);
     }
     else {
@@ -195,23 +201,29 @@ void    *add_chunk(size_t size)
 
 int    init_heap()
 {
-    heap = mmap(0, getpagesize(), PROT, MAP,0, 0);
-    heap->safe = NULL;
-    if (heap != NULL){
-        heap->pagesize = getpagesize();
-        heap->TINY_LIMIT = heap->pagesize/10;
-        heap->SMALL_LIMIT = heap->pagesize;
-        heap->meta_size = sizeof(t_metadata);
+    // heap = mmap(0, getpagesize(), PROT, MAP,0, 0);
+    // t_heap neap;
+    // neap->safe = 
+    // heap.safe = NULL;
+    // if (heap != NULL){
+        heap.pagesize = getpagesize();
+        heap.TINY_LIMIT = heap.pagesize/10;
+        heap.SMALL_LIMIT = heap.pagesize;
+        heap.meta_size = sizeof(t_metadata);
 
-        // heap->tiny = add_chunk(heap->pagesize * TINY_FACTOR);
-        // heap->small = add_chunk(heap->pagesize * SMALL_FACTOR);
-        heap->tiny = NULL;
-        heap->small = NULL;
-        heap->large = NULL;
+        // heap.tiny = add_chunk(heap.pagesize * TINY_FACTOR);
+        // heap.small = add_chunk(heap.pagesize * SMALL_FACTOR);
+        heap.tiny = NULL;
+        heap.small = NULL;
+        heap.large = NULL;
+
+        // heap.mmaped = mmap(0, getpagesize(), PROT, MAP,0, 0);
+        // heap.mmaped->ptr = NULL;
+        // heap.mmaped->prev = NULL;
         return(1);
-    }
-    else
-        return(0);
+    // }
+    // else
+    //     return(0);
 }
 
 void            *allocate_in_zone(void **cur, size_t size,size_t zonefactor)
@@ -220,32 +232,31 @@ void            *allocate_in_zone(void **cur, size_t size,size_t zonefactor)
     void            *temp;
     t_metadata      *meta;
     t_metadata      *nextMeta;
-    size_t    meta_size = heap->meta_size;
+    size_t    meta_size = heap.meta_size;
     
     if (*cur == NULL){
-        *cur = add_chunk(heap->pagesize * zonefactor);
+        *cur = add_chunk(heap.pagesize * zonefactor);
     }
     void *current = *cur;
     // ft_putstr("lol");
     while (current) // search for free space and return a ptr.
     {
-        // alloc_add_next:
+        alloc_add_next:
         meta = current-meta_size;
 
-        // if (!check_safe(meta)){
-        //         write_address((unsigned long)current + meta_size);
-        //         ft_putstr(" >> OUUUPS \n");
-        //     if (meta->next){
-        //         current = meta->next;
-        //         goto alloc_add_next;
-        //     }
-        //     else
-        //         goto alloc_add_chunk;
-        // }
-        // if ()
+        if (!check_safe(meta)){
+                // write_address((unsigned long)current + meta_size);
+                // ft_putstr(" >> OUUUPS \n");
+            if (meta->next){
+                current = meta->next;
+                goto alloc_add_next;
+            }
+            else
+                goto alloc_add_chunk;
+        }
         if(meta->isFree == 'Y' && (meta->size - (size + meta_size)) >= 0 && size <= meta->size - meta_size){
                 meta->isFree = 'N';
-            if (size + meta_size <= heap->SMALL_LIMIT && (meta->size - (size + meta_size)) >= (size_t)heap->meta_size){ 
+            if (size + meta_size <= heap.SMALL_LIMIT && (meta->size - (size + meta_size)) >= (size_t)heap.meta_size){ 
                 // in preallocated zones, the free space is devided,
                 // take the size you need and define the rest as free space.
                 new = current + size + meta_size;
@@ -263,11 +274,11 @@ void            *allocate_in_zone(void **cur, size_t size,size_t zonefactor)
         if (meta->next != NULL)
             current = meta->next;
         else{ //if there is no free space, add a chunk to the zone using mmap.
-            // alloc_add_chunk:
+            alloc_add_chunk:
             temp = current;
-	        // ft_putnbr((int)heap->pagesize * zonefactor);
+	        // ft_putnbr((int)heap.pagesize * zonefactor);
             // ft_putchar('\n');
-            meta->next = add_chunk(heap->pagesize * zonefactor);
+            meta->next = add_chunk(heap.pagesize * zonefactor);
             current = meta->next;
             nextMeta = current-meta_size;
             nextMeta->prev = temp;
@@ -279,32 +290,22 @@ void            *allocate_in_zone(void **cur, size_t size,size_t zonefactor)
 void            *malloc(size_t size)
 {
     pthread_mutex_lock(&mutex);
-	unsigned long        *ret = NULL;
-	ft_putstr("M ");
-	ft_putnbr((int)size);
-	ft_putchar(' ');
-
-	if (!heap)
+	void        *ret = NULL;
+	// ft_putstr("M "); //
+	// ft_putnbr((int)size); //
+	// ft_putchar(' '); //
+	if (!heap.tiny)
         init_heap();
-
-    // ret = allocate_in_zone(&heap->tiny, size, TINY_FACTOR);
-
-    if (size){
-        if (size + heap->meta_size <= heap->TINY_LIMIT)
-            ret = allocate_in_zone(&heap->tiny, size, TINY_FACTOR);
-        else if (size + heap->meta_size <= heap->SMALL_LIMIT)
-            ret = allocate_in_zone(&heap->small, size, SMALL_FACTOR);
-        else{
-            ret = allocate_in_zone(&heap->large, size, ((size + heap->meta_size)/heap->pagesize)+1);
-            // if (heap->large == NULL)
-            //     heap->large = ret;
-            // heap->largeEnd = ret; // since large zone use mmap everytime, the search for free space start from the last chunk,'no free space -> allocate using mmap'
-        }
-    }
-    // show_alloc_mem();
-    // show_alloc_mem_ex(ret, 1);
-    write_address((unsigned long)ret);
-	ft_putchar('\n');
+    if ((int)size < 0)
+        size = 0;
+    if (size + heap.meta_size <= heap.TINY_LIMIT)
+        ret = allocate_in_zone(&heap.tiny, size, TINY_FACTOR);
+    else if (size + heap.meta_size <= heap.SMALL_LIMIT)
+        ret = allocate_in_zone(&heap.small, size, SMALL_FACTOR);
+    else
+        ret = allocate_in_zone(&heap.large, size, ((size + heap.meta_size)/heap.pagesize)+1);
+    // write_address((unsigned long)ret); //
+	// ft_putchar('\n');//
     pthread_mutex_unlock(&mutex);
 	return(ret);
 }
@@ -312,48 +313,47 @@ void            *malloc(size_t size)
 int    ptr_alloc_check(void *ptr){
     if (ptr == NULL)
         return(0);
-    void *actu = heap->tiny;
+    void *actu = heap.tiny;
     t_metadata *meta = NULL;
     while(actu){
 	    
         if ((long)actu == (long)ptr)
             return(1);
-        meta = actu - heap->meta_size;
+        meta = actu - heap.meta_size;
         actu = meta->next;
     }
-    actu = heap->small;
+    actu = heap.small;
     while(actu){
         
         if ((long)actu == (long)ptr)
             return(1);
-        meta = actu - heap->meta_size;
+        meta = actu - heap.meta_size;
         actu = meta->next;
     }
-    actu = heap->large;
+    actu = heap.large;
     while(actu){
         if ((long)actu == (long)ptr)
             return(1);
-        meta = actu - heap->meta_size;
+        meta = actu - heap.meta_size;
         actu = meta->next;
     }
     return (0);
 }
 
 // void *calloc(size_t nitems, size_t size){
-//     void    *ret;
-//     void    *temp;
-//     int     i = -1;
-//     ret = 
-//     while (++i < nitems){
-
-//     }
+//     ft_putstr("CALLOC ");
+//     ft_putnbr(nitems);
+//     ft_putchar(' ');
+//     ft_putnbr(size);
+//     ft_putchar('\n');
+//     return NULL;
 // }
 
 void free(void *ptr)
 {
-    ft_putstr("F ");
-    write_address((unsigned long)ptr);
-	ft_putchar('\n');
+    // ft_putstr("F ");
+    // write_address((unsigned long)ptr);
+	// ft_putchar('\n');
 
     size_t     accum = 0;
     void    *current = ptr;
@@ -362,90 +362,137 @@ void free(void *ptr)
     int     zone_large;
     pthread_mutex_lock(&mutex);
     if (ptr == NULL || !ptr_alloc_check(ptr)){
-        ft_putstr("out\n");
+        // ft_putstr("out\n");
         return;
     }
 
 
-	t_metadata *meta = ptr - heap->meta_size;
+	t_metadata *meta = ptr - heap.meta_size;
     // if (!check_safe(meta)){
     //     // show_alloc_mem_ex(ptr, 1);
     //     // ft_putstr(">>>>>>>>>>> fkd"); // MUST ADD METADATA BACKUP I GUESS
     // } 
     if (meta->isFree == 'Y'){
-        ft_putstr("!!! DOUBLE FREE\n");
+        // ft_putstr("!!! DOUBLE FREE\n");
         return;
     }
 	meta->isFree = 'Y';
-    zone_large = ((size_t)meta->size > heap->SMALL_LIMIT) ? 1 : 0;
+    zone_large = ((size_t)meta->size > heap.SMALL_LIMIT) ? 1 : 0;
     if (zone_large){ //large zone
-        // ft_putstr("FREE LARGE \n");
+        ft_putstr("FREE LARGE \n");
 	    t_metadata *meta_munmap = meta;
         save_min = meta->prev;
         save_max = meta->next;
         if  (save_min){
-            meta = save_min - heap->meta_size;
+            meta = save_min - heap.meta_size;
             meta->next = save_max;
         }
         if (save_max){
-            meta = save_max - heap->meta_size;
+            meta = save_max - heap.meta_size;
             meta->prev = save_min;
         }
-        if (ptr == heap->large) //in case of free chunk that was the heap head
-            heap->large = meta_munmap->next;
+        if (ptr == heap.large) //in case of free chunk that was the heap head
+            heap.large = meta_munmap->next;
         if (meta_munmap->next == NULL && meta_munmap->prev == NULL){ //..free all chunks of large
-            heap->largeEnd = NULL;
-            heap->large = NULL;
+            heap.largeEnd = NULL;
+            heap.large = NULL;
         }
         munmap(meta_munmap, meta_munmap->size); // munmap remove pages by pagesize*
     }
     else {
         // ft_putstr(">>FREE NON LARGE \n");
         save_max = current;
+        meta = current - heap.meta_size;
+        accum += meta->size;
+        current = meta->next;
         while (current){ // search for free chunks after ptr to defragment the heap
-            meta = current - heap->meta_size;
-            if (meta->isFree == 'Y'){
+            meta = current - heap.meta_size;
+            // ft_putstr("fw \n");
+            if (meta->isFree == 'Y' && meta->safe_three != '|'){
                 accum += meta->size;
             }
             else
                 break;
-            save_max = current;
             current = meta->next;
         }
+        save_max = current;
         current = ptr;
-        meta = current - heap->meta_size;
+        meta = current - heap.meta_size;
         save_min = current;
+        if (meta->safe_three == '|'){ // if ptr is returned by mmap, no need to go back.
+
+            goto jump;
+        }
         current = meta->prev;
         while (current ){ // search for free chunks before ptr to defrag
-            meta = current - heap->meta_size;
+            meta = current - heap.meta_size;
+            // ft_putstr("back \n");
             if (meta->isFree == 'Y'){
                 accum += meta->size;
             }
             else
                 break;
             save_min = current;
-            if (meta->prev == NULL)
+            if (meta->prev == NULL || meta->safe_three == '|')
                 break;
             current = meta->prev;
         }
         current = save_min;
-        meta = current - heap->meta_size;
+        jump:
+        meta = current - heap.meta_size;
         meta->isFree = 'Y';
         meta->size = accum;
-        add_safe(meta);
+        // char tem = meta->safe_three;
+        // add_safe(meta);
+
         if (save_max != save_min)
             meta->next = save_max;
     }
+    if ( !zone_large && meta->safe_three == '|' && !(meta->size % heap.pagesize)){
+        // show_alloc_mem();
+        accum = meta->size; // store the size.
+        save_min = meta->prev; // pop the chunk from heap.
+        save_max = meta->next;
+        // ft_putstr("need munmap\n");
+        if (save_min){
+            meta = save_min - heap.meta_size;
+            meta->next = save_max;
+        }
+        if (save_max){
+            meta = save_max - heap.meta_size;
+            meta->prev = save_min;
+        }
+        if (current == heap.tiny)
+            heap.tiny = NULL;
+        else if (current == heap.small)
+            heap.small = NULL;
+        // ft_putstr("MUNMAP ");
+        // ft_putnbr('');
+        // ft_putchar('\n');
+        // ft_putchar(' ');
+        // write_address((unsigned long)current);
+        // ft_putchar('\n');
+        // ft_putnbr(accum);
+        // ft_putchar('\n');
+        // int f = munmap(current-heap.meta_size, (size_t)1); // deacllocate the memory.
+        munmap(current-heap.meta_size, (size_t)1); // deacllocate the memory.
+        // ft_putchar('\n');
+        // ft_putnbr(f);
+        // ft_putchar('\n');
+
+    }
+
     pthread_mutex_unlock(&mutex);
+	// ft_putstr("free finish \n");
 }
 
 void    *realloc(void *ptr, size_t size){
     // show_alloc_mem();
-    ft_putstr("R ");
-    write_address((unsigned long)ptr);
-	ft_putchar(' ');
-	ft_putnbr((int)size);
-	ft_putchar('\n');
+    // ft_putstr("R ");
+    // write_address((unsigned long)ptr);
+	// ft_putchar(' ');
+	// ft_putnbr((int)size);
+	// ft_putchar('\n');
     // show_alloc_mem();
     pthread_mutex_lock(&mutex);
     if (size < 1){
@@ -459,44 +506,44 @@ void    *realloc(void *ptr, size_t size){
     if (!ptr_alloc_check(ptr)){
         return(NULL);
     }
-    ft_putstr("deb \n\n");
+    // ft_putstr("deb \n\n");
     // show_alloc_mem_ex(ptr, 0);
     void *ret = NULL;
-    t_metadata *meta = ptr - heap->meta_size;
+    t_metadata *meta = ptr - heap.meta_size;
     if (meta->next == NULL){
         goto just_allocate;
     }
-    t_metadata *nextmeta = meta->next - heap->meta_size;
-    if (nextmeta->isFree == 'Y' && (meta->size - heap->meta_size) + (nextmeta->size) == size){ // if realloc will use exacly all the next free chunk
+    t_metadata *nextmeta = meta->next - heap.meta_size;
+    if (nextmeta->isFree == 'Y' && (meta->size - heap.meta_size) + (nextmeta->size) == size){ // if realloc will use exacly all the next free chunk
         meta->size += nextmeta->size;
         meta->next = nextmeta->next;
-        nextmeta = meta->next - heap->meta_size;
+        nextmeta = meta->next - heap.meta_size;
         nextmeta->prev = ptr;
         ret = ptr;
     }
-    else if (nextmeta->isFree == 'Y' && (meta->size - heap->meta_size) + (nextmeta->size) > size){ // if realloc will use less than the avalable free space
+    else if (nextmeta->isFree == 'Y' && (meta->size - heap.meta_size) + (nextmeta->size) > size){ // if realloc will use less than the avalable free space
         void *save_next = nextmeta->next;
         size_t save_size = nextmeta->size;
-        meta->next = ptr + size + heap->meta_size;
-        t_metadata *midmeta = meta->next - heap->meta_size;
-        midmeta->size = save_size - ( size - (meta->size-heap->meta_size)); //new chunk, what's left
+        meta->next = ptr + size + heap.meta_size;
+        t_metadata *midmeta = meta->next - heap.meta_size;
+        midmeta->size = save_size - ( size - (meta->size-heap.meta_size)); //new chunk, what's left
         midmeta->next = save_next;
         midmeta->prev = ptr;
         midmeta->isFree = 'Y';
         add_safe(midmeta);
         if (save_next != NULL){
-            nextmeta = save_next - heap->meta_size;
-            nextmeta->prev = midmeta + heap->meta_size;
-            meta->size = size + heap->meta_size;
+            nextmeta = save_next - heap.meta_size;
+            nextmeta->prev = midmeta + heap.meta_size;
+            meta->size = size + heap.meta_size;
         }
-        ret = midmeta + heap->meta_size;
-        ft_putstr(">>deb \n\n");
+        ret = midmeta + heap.meta_size;
+        // ft_putstr(">>deb \n\n");
     }
     else{
         just_allocate:
         ret = malloc(size);
         size_t i = -1;
-        size_t len = meta->size - heap->meta_size;
+        size_t len = meta->size - heap.meta_size;
         char *dst = ret;
         char *src = ptr;
         while (++i < len){
@@ -505,7 +552,7 @@ void    *realloc(void *ptr, size_t size){
         free(ptr);
     }
     pthread_mutex_unlock(&mutex);
-    write_address((unsigned long)ret);
-    ft_putchar('\n');
+    // write_address((unsigned long)ret);
+    // ft_putchar('\n');
     return(ret);
 }

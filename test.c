@@ -12,14 +12,31 @@ int     check_safe(t_metadata *ptr)
     return(0);
 }
 
-int main(){
-    int len = 1000;
+int main_2(void)
+{
+    int   i;
+    char  *addr;
+
+    i = 0;
+    while (i < 1024) 
+    {
+        addr = (char*)malloc(1024);
+        addr[0] = 42;
+        free(addr); 
+        i++; 
+    }
+    show_alloc_mem();
+    return (0);
+}
+
+int main_m(){
+    int len = 400;
     char *val[len+1000];
     int i = 0;
     char fill = 'A';
     int j;
     int s = 3;
-    size_t size[3] = {60, 500, 9000};
+    size_t size[3] = {376, 377, 378};
     t_metadata *meta;
     val[i] = malloc(size[s%3]);
     j = -1;
@@ -39,16 +56,16 @@ int main(){
         val[i][j] = 0xff;
 
         size[s%3]+=1;
-        meta = val[i] - sizeof(t_metadata);
-        if (!check_safe(meta)){
-            ft_putstr("fucked\n");
-            show_alloc_mem_ex(val[i-1], 1);
-            show_alloc_mem_ex(val[i], 1);
-            return(0);
-        }
-        ft_putchar(meta->safe_one);
-        ft_putchar(meta->safe_two);
-        ft_putchar(meta->safe_three);
+        // meta = val[i] - sizeof(t_metadata);
+        // if (!check_safe(meta)){
+        //     ft_putstr("fucked\n");
+        //     show_alloc_mem_ex(val[i-1], 1);
+        //     show_alloc_mem_ex(val[i], 1);
+        //     return(0);
+        // }
+        // ft_putchar(meta->safe_one);
+        // ft_putchar(meta->safe_two);
+        // ft_putchar(meta->safe_three);
         // meta->isFree<<=8;
         // show_alloc_mem_ex(val[i], 1);
         // show_alloc_mem();
@@ -68,25 +85,67 @@ int main(){
     }
     i-=1;
     show_alloc_mem();
-    // meta = val[i] - sizeof(t_metadata);
-    // show_alloc_mem();
-    // show_alloc_mem_ex(val[i], 1);
-    // show_alloc_mem_ex(val[i], 1);
-    // malloc(90);
-    // show_alloc_mem();
-    // malloc(3850);
-    // show_alloc_mem();
-    // malloc(1);
-    // show_alloc_mem();
-    // show_alloc_mem_ex(val[i], 1);
 
-    // show_alloc_mem_ex(val[1], 1);
-    // free(val[1]);
-    // i = -1;
-    // while (++i < 1001){
-    //     printf("%c")
-    // }
-    // show_alloc_mem();
+    return(0);
+}
+
+int main_s(){
+    int len = 5;
+    char *val[len+1000];
+    int i = 0;
+    char fill = 'A';
+    int j;
+    int s = 3;
+    size_t size = 2;
+    t_metadata *meta;
+    val[i] = malloc(size);
+    j = -1;
+    while (++j < size-1)
+            val[i][j] = fill;
+    val[i][j] = 0xff;
+    while(++i < len)
+    {
+        j = -1;
+        val[i] = malloc(size);
+        // ft_putnbr(i);
+        // ft_putchar('\n');
+        // show_alloc_mem();
+
+        // while (++j < size[s%3]-1)
+        //     val[i][j] = fill;
+        // val[i][j] = 0xff;
+
+        // size+=1;
+        // meta = val[i] - sizeof(t_metadata);
+        // ft_putchar(meta->safe_one);
+        // ft_putchar(meta->safe_two);
+        // ft_putchar(meta->safe_three);
+        // meta->isFree<<=8;
+        // show_alloc_mem_ex(val[i], 1);
+        // show_alloc_mem();
+
+        // if (i == 8){
+        //     show_alloc_mem_ex(val[i-2], 1);
+        //     show_alloc_mem_ex(val[i-1], 1);
+        //     show_alloc_mem_ex(val[i], 1);
+        // }
+        s++;
+    }
+    show_alloc_mem();
+    i-=1;
+    while (i >= 0)
+    {
+        free(val[i]);
+        i--;
+    }
+    show_alloc_mem();
+    // meta = val[i] - sizeof(t_metadata);
+    return(0);
+}
+int main(){
+    main_s();
+    // main_m();
+    // main_2();
     return(0);
 }
 
