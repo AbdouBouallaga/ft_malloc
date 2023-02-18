@@ -4,8 +4,7 @@ LIB_DIR = $(CURDIR)/lib/
 SRC	= $(SRC_DIR)malloc.c
 OBJ	= $(SRC:.c=.o)
 LFT = ./libft/libft.a
-# CFLAGS = -fPIC -Wall -Wextra -Werror
-CFLAGS = -fPIC
+CFLAGS = -fPIC -Wall -Wextra -Werror
 KERNEL = $(shell uname -s)
 HOSTTYPE = $(shell uname -m)_$(KERNEL)
 
@@ -18,7 +17,7 @@ CC = rm $(NAME) 2>/dev/null | cc
 # 	COMP = clang -dynamiclib -std=gnu99 $(OBJ) $(LFT) -current_version 1.0 -compatibility_version 1.0 -o $(NAME)
 # endif
 # ifeq ($(KERNEL),Linux)
-	COMP = gcc -o $(NAME) $(OBJ) $(LFT) $(CFLAGS) -shared
+	COMP = cc -o $(NAME) $(OBJ) $(LFT) $(CFLAGS) -shared
 # endif
 
 all: $(OBJ) $(NAME) $(LINK)
