@@ -4,7 +4,8 @@ LIB_DIR = $(CURDIR)/lib/
 SRC	= $(SRC_DIR)malloc.c
 OBJ	= $(SRC:.c=.o)
 LFT = ./libft/libft.a
-CFLAGS = -fPIC -Wall -Wextra -Werror
+# CFLAGS = -fPIC -Wall -Wextra -Werror
+CFLAGS = -fPIC
 KERNEL = $(shell uname -s)
 HOSTTYPE = $(shell uname -m)_$(KERNEL)
 
@@ -13,21 +14,24 @@ LINK = libft_malloc.so
 
 CC = rm $(NAME) 2>/dev/null | cc
 
-ifeq ($(KERNEL),Darwin)
-	COMP = clang -dynamiclib -std=gnu99 $(OBJ) $(LFT) -current_version 1.0 -compatibility_version 1.0 -o $(NAME)
-endif
-ifeq ($(KERNEL),Linux)
+# ifeq ($(KERNEL),Darwin)
+# 	COMP = clang -dynamiclib -std=gnu99 $(OBJ) $(LFT) -current_version 1.0 -compatibility_version 1.0 -o $(NAME)
+# endif
+# ifeq ($(KERNEL),Linux)
 	COMP = gcc -o $(NAME) $(OBJ) $(LFT) $(CFLAGS) -shared
-endif
+# endif
 
 all: $(OBJ) $(NAME) $(LINK)
 
-$(NAME): $(LFT)
+$(OBJ): $(SRC) $(INC_DIR)malloc.h
+
+$(NAME): $(OBJ) $(LFT)
 	mkdir -p $(LIB_DIR)
 	$(COMP)
 
-$(LINK):
+$(LINK): $(OBJ)
 	-ln -s $(NAME) $(LINK)
+	
 $(LFT):
 	make -C ./libft
 
@@ -42,7 +46,6 @@ fclean: clean
 re: fclean all
 
 os:
-	ifeq ($(KERNEL),Darwin)
-		echo $(KERNEL)
+	@echo $(KERNEL)
 
 	

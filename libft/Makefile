@@ -22,6 +22,8 @@ BNR = ft_putchar.o \
 CFLAGS = -Wall -Werror -Wextra
 all: $(NAME)
 
+$(BNR): $(SRC) libft.h
+
 $(NAME): $(BNR)
 	@ar rc  $(NAME) $(BNR)
 

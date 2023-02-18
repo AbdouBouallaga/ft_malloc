@@ -5,6 +5,8 @@
 #include <sys/mman.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "../libft/libft.h"
 
 
@@ -12,19 +14,11 @@
 
 
 #define PROT    PROT_READ | PROT_WRITE
-#define MAP     MAP_PRIVATE | MAP_ANONYMOUS
+// #define MAP     MAP_PRIVATE | MAP_ANONYMOUS
+#define MAP     MAP_SHARED | MAP_ANONYMOUS
 
-
-#define TINY_FACTOR     1
-#define SMALL_FACTOR	1
-
-// typedef struct		s_mmaped
-// {
-// 	void 			*ptr;
-// 	size_t			size;
-// 	void			*prev;
-// 	void			*next;
-// }					t_mmaped;
+#define TINY_FACTOR     10
+#define SMALL_FACTOR	100
 
 typedef struct		s_heap
 {
@@ -38,8 +32,6 @@ typedef struct		s_heap
 	int				meta_size;
 	size_t			TINY_LIMIT;
 	size_t			SMALL_LIMIT;
-	// void			*safe; //a backup of meta_datas
-	// int				safe_count;
 }					t_heap;
 
 
