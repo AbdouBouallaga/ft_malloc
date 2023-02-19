@@ -14,8 +14,8 @@
 
 
 #define PROT    PROT_READ | PROT_WRITE
-// #define MAP     MAP_PRIVATE | MAP_ANONYMOUS
-#define MAP     MAP_SHARED | MAP_ANONYMOUS
+#define MAP     MAP_PRIVATE | MAP_ANONYMOUS
+// #define MAP     MAP_SHARED | MAP_ANONYMOUS
 
 #define TINY_FACTOR     10
 #define SMALL_FACTOR	100
@@ -25,8 +25,6 @@ typedef struct		s_heap
 	void			*tiny;
 	void			*small;
 	void			*large;
-
-	void			*largeEnd;
 
 	int				pagesize;
 	int				meta_size;

@@ -222,7 +222,7 @@ void *add_chunk(size_t size)
 int init_heap()
 {
     heap.pagesize = getpagesize();
-    heap.TINY_LIMIT = heap.pagesize / 10;
+    heap.TINY_LIMIT = (heap.pagesize / 10) -32;
     heap.SMALL_LIMIT = heap.pagesize - 32;
     heap.meta_size = sizeof(t_metadata);
 
@@ -364,18 +364,10 @@ void free(void *ptr)
     int zone_large;
     pthread_mutex_lock(&mutex);
     if (ptr == NULL || !ptr_alloc_check(ptr))
-    {
-        ft_putstr("\"malloc: *** error for object ");
-        write_address((unsigned long)ptr);
-        ft_putstr(": pointer being freed was not allocated\"\n");
         return;
-    }
 
     t_metadata *meta = ptr - heap.meta_size;
-    // if (!check_safe(meta)){
-    //     // show_alloc_mem_ex(ptr, 1);
-    //     // ft_putstr(">>>>>>>>>>> fkd"); // MUST ADD METADATA BACKUP I GUESS
-    // }
+
     if (meta->isFree == 'Y')
     {
         ft_putstr("\"malloc: *** error for object ");
@@ -385,32 +377,7 @@ void free(void *ptr)
     }
     meta->isFree = 'Y';
     zone_large = (((size_t)meta->size - heap.meta_size) > heap.SMALL_LIMIT) ? 1 : 0;
-    if (zone_large)
-    { // large zone
-        t_metadata *meta_munmap = meta;
-        save_min = meta->prev;
-        save_max = meta->next;
-        if (save_min)
-        {
-            meta = save_min - heap.meta_size;
-            meta->next = save_max;
-        }
-        if (save_max)
-        {
-            meta = save_max - heap.meta_size;
-            meta->prev = save_min;
-        }
-        if (ptr == heap.large) // in case of free chunk that was the heap head
-            heap.large = meta_munmap->next;
-        if (meta_munmap->next == NULL && meta_munmap->prev == NULL)
-        { //..free all chunks of large
-            heap.largeEnd = NULL;
-            heap.large = NULL;
-        }
-        munmap(meta_munmap, meta_munmap->size); // munmap remove pages by pagesize*
-    }
-    else
-    {
+
         save_max = current;
         meta = current - heap.meta_size;
         accum += meta->size;
@@ -455,16 +422,12 @@ void free(void *ptr)
         meta = current - heap.meta_size;
         meta->isFree = 'Y';
         meta->size = accum;
-        // char tem = meta->safe_three;
-        // add_safe(meta);
 
         if (save_max != save_min)
             meta->next = save_max;
-    }
-    if (!zone_large && meta->safe_three == '|' && !meta->next)
+    // }
+    if (meta->safe_three == '|' && (!meta->next || ((t_metadata *)(meta->next))->safe_three != '|'))
     {
-        // show_alloc_mem();
-        accum = meta->size;    // store the size.
         save_min = meta->prev; // pop the chunk from heap.
         save_max = meta->next;
         if (save_min)
@@ -478,11 +441,13 @@ void free(void *ptr)
             meta->prev = save_min;
         }
         if (current == heap.tiny)
-            heap.tiny = NULL;
+            heap.tiny = save_max;
         else if (current == heap.small)
-            heap.small = NULL;
+            heap.small = save_max;
+        else if (current == heap.large)
+            heap.large = save_max;
         meta = current - heap.meta_size;
-        munmap(current - heap.meta_size, meta->size); // deacllocate the memory.
+        munmap(meta, meta->size); // deallocate the memory.
     }
     pthread_mutex_unlock(&mutex);
 }
